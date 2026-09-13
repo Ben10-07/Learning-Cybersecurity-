@@ -1,0 +1,366 @@
+Networking Protocols — THM Notes
+
+1. DNS — Domain Name System
+
+DNS operates at the Application Layer (Layer 7) of the OSI model.
+
+Default Ports
+
+- UDP 53 → used by DNS by default
+- TCP 53 → also used when required, such as certain larger DNS responses and DNS zone transfers
+
+Important DNS Records
+
+Record| Purpose
+A| Maps a hostname/domain to an IPv4 address
+AAAA| Maps a hostname/domain to an IPv6 address
+CNAME| Maps one domain name to another domain name
+MX| Specifies the mail server responsible for receiving email for a domain
+
+A Record
+
+Maps a hostname to an IPv4 address.
+
+Example:
+
+example.com → 172.17.2.172
+
+AAAA Record
+
+Similar to an A record, but it maps a hostname to an IPv6 address.
+
+example.com → IPv6 address
+
+Remember:
+
+A     → IPv4
+AAAA  → IPv6
+
+CNAME Record
+
+Maps a domain name to another domain name.
+
+Example:
+
+www.example.com → example.com
+
+MX Record
+
+Specifies the mail server responsible for handling email for a domain.
+
+example.com → mail server
+
+---
+
+2. HTTP Methods
+
+HTTP methods tell the web server what action the client wants to perform.
+
+GET
+
+Used to retrieve data from a server.
+
+Examples:
+
+- HTML page
+- Image
+- Other resources
+
+GET → Retrieve
+
+POST
+
+Used to send/submit data to a server.
+
+Examples:
+
+- Submit a form
+- Upload data
+
+POST → Submit data
+
+PUT
+
+Used to create or replace/update a resource at a specified location.
+
+PUT → Create / Replace
+
+DELETE
+
+Used to request deletion of a specified resource.
+
+DELETE → Delete
+
+Quick Revision
+
+GET     → Retrieve
+POST    → Submit
+PUT     → Create / Replace
+DELETE  → Delete
+
+---
+
+3. FTP — File Transfer Protocol
+
+FTP is used to transfer files between a client and a server.
+
+Default Port
+
+FTP → TCP 21
+
+Port 21 is used for the FTP control connection. File transfers use a separate data connection.
+
+Important FTP Commands
+
+Command| Purpose
+"USER"| Provides the username
+"PASS"| Provides the password
+"RETR"| Retrieves/downloads a file
+"STOR"| Uploads/stores a file
+
+Examples
+
+USER anonymous
+PASS
+
+Anonymous FTP may allow access without a normal user account, depending on the server configuration.
+
+---
+
+Basic FTP Client Workflow
+
+ftp <server-ip>
+
+After connecting:
+
+USER anonymous
+PASS
+ls
+get flag.txt
+quit
+
+After returning to the normal shell, a downloaded text file can be viewed with:
+
+cat flag.txt
+
+«"ascii" is an FTP transfer mode used for text files. It is not required for every FTP download.»
+
+---
+
+4. SMTP — Simple Mail Transfer Protocol
+
+SMTP is used for sending email and transferring mail between mail servers.
+
+Default Port
+
+SMTP → TCP 25
+
+Important SMTP Commands
+
+Command| Purpose
+"HELO"| Initiates an SMTP session
+"EHLO"| Extended version of "HELO"
+"MAIL FROM:"| Specifies the sender
+"RCPT TO:"| Specifies the recipient
+"DATA"| Begins the email message
+"."| On a line by itself, indicates the end of the message
+
+Basic Flow
+
+HELO / EHLO
+      ↓
+MAIL FROM:
+      ↓
+RCPT TO:
+      ↓
+DATA
+      ↓
+Email content
+      ↓
+.
+
+The single "." on its own line tells the SMTP server that the message content has ended.
+
+---
+
+5. POP3 — Post Office Protocol Version 3
+
+POP3 is used to retrieve email from a mail server.
+
+Default Port
+
+POP3 → TCP 110
+
+Important POP3 Commands
+
+Command| Purpose
+"USER <username>"| Identifies the user
+"PASS <password>"| Provides the password
+"STAT"| Shows number of messages and total size
+"LIST"| Lists messages and their sizes
+"RETR <number>"| Retrieves a specific message
+"DELE <number>"| Marks a message for deletion
+"QUIT"| Ends the session and applies pending changes
+
+Basic POP3 Workflow
+
+Connect
+  ↓
+USER
+  ↓
+PASS
+  ↓
+STAT
+  ↓
+LIST
+  ↓
+RETR <message_number>
+  ↓
+QUIT
+
+Telnet Example
+
+A basic way to interact with a POP3 service in a lab environment:
+
+telnet <server-ip> 110
+
+Then:
+
+USER <username>
+PASS <password>
+STAT
+LIST
+RETR <message_number>
+QUIT
+
+«The exact commands and credentials depend on the lab environment. Don't use credentials against systems you don't have permission to access.»
+
+---
+
+6. IMAP — Internet Message Access Protocol
+
+IMAP is designed to keep email synchronized between the mail server and multiple clients/devices.
+
+Unlike a simple download-and-delete workflow, IMAP can synchronize actions such as:
+
+- Read/unread status
+- Moved messages
+- Deleted messages
+- Mailbox folders
+
+This makes IMAP useful when accessing the same mailbox from multiple devices.
+
+Default Port
+
+IMAP → TCP 143
+
+---
+
+Important IMAP Commands
+
+Command| Purpose
+"LOGIN"| Authenticates the user
+"SELECT"| Selects a mailbox/folder
+"FETCH"| Retrieves information/content from messages
+"MOVE"| Moves messages to another mailbox
+"COPY"| Copies messages to another mailbox
+"LOGOUT"| Ends the IMAP session
+
+FETCH Example
+
+FETCH 3 BODY[]
+
+This requests the content of message number "3".
+
+Another example:
+
+FETCH 4 BODY[]
+
+FETCH → Retrieve message data
+4     → Message number
+BODY[] → Message body/content
+
+«IMAP commands can have additional syntax and often use command tags such as "A001", "A002", etc., depending on the client/session.»
+
+---
+
+7. Protocol & Port Quick Reference
+
+Protocol| Transport| Default Port| Main Purpose
+TELNET| TCP| 23| Remote terminal access
+DNS| UDP/TCP| 53| Domain name resolution
+HTTP| TCP| 80| Web traffic
+HTTPS| TCP| 443| Secure web traffic
+FTP| TCP| 21| File transfer/control
+SMTP| TCP| 25| Email sending/transfer
+POP3| TCP| 110| Email retrieval
+IMAP| TCP| 143| Email synchronization
+
+---
+
+8. One-Line Revision
+
+DNS     → Domain name resolution
+HTTP    → Web communication
+FTP     → File transfer
+SMTP    → Send/transfer email
+POP3    → Retrieve email
+IMAP    → Synchronize/manage email
+TELNET  → Remote terminal access
+
+Ports to Memorize
+
+23   → TELNET
+53   → DNS
+80   → HTTP
+443  → HTTPS
+21   → FTP
+25   → SMTP
+110  → POP3
+143  → IMAP
+
+Email Protocol Difference
+
+SMTP → Send email
+POP3 → Retrieve email
+IMAP → Synchronize/manage email across devices
+
+---
+
+⭐ Most Important for Revision
+
+DNS
+ ├── A      → IPv4
+ ├── AAAA   → IPv6
+ ├── CNAME  → Domain → Domain
+ └── MX     → Mail server
+
+HTTP
+ ├── GET    → Retrieve
+ ├── POST   → Submit
+ ├── PUT    → Create/Replace
+ └── DELETE → Delete
+
+FTP
+ ├── USER → Username
+ ├── PASS → Password
+ ├── RETR → Download
+ └── STOR → Upload
+
+SMTP
+ ├── MAIL FROM → Sender
+ ├── RCPT TO   → Recipient
+ └── DATA      → Email content
+
+POP3
+ ├── STAT → Message count/size
+ ├── LIST → List messages
+ ├── RETR → Retrieve message
+ └── DELE → Mark for deletion
+
+IMAP
+ ├── LOGIN  → Authenticate
+ ├── SELECT → Select mailbox
+ ├── FETCH  → Retrieve message data
+ ├── MOVE   → Move messages
+ └── COPY   → Copy messages
