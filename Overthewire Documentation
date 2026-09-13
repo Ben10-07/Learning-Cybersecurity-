@@ -16,6 +16,7 @@ What I learned
 
 Basic SSH connection
 How to connect to a specific port using "-p"
+
 Level 1
 
 I was already familiar with basic commands such as "cd", "cat", and "ls", so I tried using the commands I already knew.
@@ -30,6 +31,7 @@ What I learned
 
 "ls" is used to list files and directories.
 "cat" can be used to read file contents.
+
 Level 2
 
 This level gave me instant frustration.
@@ -46,6 +48,7 @@ What I learned
 
 A filename can sometimes look like a command option.
 "./" can be used to explicitly refer to a file in the current directory.
+
 Level 3
 
 I was already familiar with commands such as "cd".
@@ -74,6 +77,7 @@ What I learned
 
 The "file" command can identify the type of a file.
 Wildcards such as "*" can be used to work with multiple files.
+
 Level 5
 
 I initially checked YouTube, but I was not satisfied with simply copying the solution.
@@ -87,6 +91,7 @@ What I learned
 How the "find" command can be used to search for files.
 How different conditions can be used while searching.
 Understanding a command is more useful than simply copying a solution.
+
 Level 6
 
 I do not remember many details from this level because I am writing this documentation after completing Bandit.
@@ -111,6 +116,7 @@ What I learned
 
 "grep" can search for specific text inside a file.
 Searching for a known word can be much faster than manually reading a large file.
+
 Level 8
 
 I solved this level by reading the manual and experimenting with different commands. I got several errors before finding an approach that worked.
@@ -139,6 +145,7 @@ How to read a command's manual to understand its options.
 How Base64 encoding and decoding works.
 The "-d" option can be used to decode Base64 data.
 Reading the manual can sometimes be enough to figure out the solution without using a tutorial.
+
 Level 11
 
 This level was not very clear to me at the time. I followed a solution and used the command shown there to get the password.
