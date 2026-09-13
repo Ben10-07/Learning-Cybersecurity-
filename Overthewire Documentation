@@ -1,0 +1,732 @@
+«Note: I am documenting my Bandit journey after completing the entire wargame. Because I did not document every level while solving it, some details from the earlier levels may be unclear or reconstructed from my memory. I will only include commands that I remember or can verify, rather than making up commands. The main purpose of this documentation is to record what I learned and how I approached the challenges.» OverTheWire Bandit — My Learning Journey
+
+I completed the OverTheWire Bandit wargame to improve my Linux command-line skills and problem-solving ability.
+
+This documentation is based on my own experience while solving the levels. Some of the earlier levels were documented after completing Bandit, so a few details are reconstructed from my notes and memory.
+
+Level 0
+
+At this level, I did not know how to connect to the required port, so I decided to check a YouTube tutorial.
+
+Command used
+
+ssh bandit0@bandit.labs.overthewire.org -p 2220
+
+What I learned
+
+Basic SSH connection
+How to connect to a specific port using "-p"
+Level 1
+
+I was already familiar with basic commands such as "cd", "cat", and "ls", so I tried using the commands I already knew.
+
+It worked.
+
+Commands used
+
+ls cat readme
+
+What I learned
+
+"ls" is used to list files and directories.
+"cat" can be used to read file contents.
+Level 2
+
+This level gave me instant frustration.
+
+The filename was "-", and I initially tried using the command without understanding that "-" could be interpreted as an option instead of a filename.
+
+After getting many terminal errors, I checked a YouTube tutorial. The solution shown there was different from what I was trying, but I eventually figured out that I needed to explicitly specify the file.
+
+Command used
+
+cat ./-
+
+What I learned
+
+A filename can sometimes look like a command option.
+"./" can be used to explicitly refer to a file in the current directory.
+Level 3
+
+I was already familiar with commands such as "cd".
+
+I entered the "inhere" directory and checked the files inside it.
+
+Commands used
+
+cd inhere ls
+
+What I learned
+
+Navigating directories using "cd"
+Listing directory contents using "ls"
+Level 4
+
+The password was stored in a human-readable file.
+
+I read the manual and tried different commands. I also got several errors before finding the correct approach.
+
+Commands used
+
+cd inhere file ./*
+
+What I learned
+
+The "file" command can identify the type of a file.
+Wildcards such as "*" can be used to work with multiple files.
+Level 5
+
+I initially checked YouTube, but I was not satisfied with simply copying the solution.
+
+I wanted to understand what the command was actually doing, so I experimented with the "find" command.
+
+I eventually found the required file using a simple approach. I do not remember the exact final command because I am writing this documentation after completing Bandit, so I am not going to invent one here.
+
+What I learned
+
+How the "find" command can be used to search for files.
+How different conditions can be used while searching.
+Understanding a command is more useful than simply copying a solution.
+Level 6
+
+I do not remember many details from this level because I am writing this documentation after completing Bandit.
+
+I remember initially trying to reuse the approach from Level 5 and then realizing that the requirements were different.
+
+What I learned
+
+"find" can search based on different file properties.
+File ownership and other conditions can be used while searching.
+Level 7
+
+I did not immediately know which command to use.
+
+After reading the manual and experimenting, I tried:
+
+grep millionth data.txt
+
+This gave me the required information.
+
+What I learned
+
+"grep" can search for specific text inside a file.
+Searching for a known word can be much faster than manually reading a large file.
+Level 8
+
+I solved this level by reading the manual and experimenting with different commands. I got several errors before finding an approach that worked.
+
+I used a command that showed the number of times each line appeared. Most lines had a count of "10", while one line had a count of "1".
+
+I checked the line with the count "1", and that gave me the password.
+
+I do not remember the exact command I used, so I am not adding a command that I did not actually use.
+
+What I learned
+
+Some Linux commands can show how many times a line occurs.
+A count of "1" indicated that the line appeared only once.
+Reading the manual and experimenting helped me find the solution.
+I learned that I do not always need to follow the exact command used in a tutorial. Level 10
+This level was comparatively straightforward for me. I read the manual for the command and noticed the "decode" option. From that, I understood that the data was Base64 encoded and needed to be decoded.
+
+Command used
+
+base64 -d data.txt
+
+What I learned
+
+How to read a command's manual to understand its options.
+How Base64 encoding and decoding works.
+The "-d" option can be used to decode Base64 data.
+Reading the manual can sometimes be enough to figure out the solution without using a tutorial.
+Level 11
+
+This level was not very clear to me at the time. I followed a solution and used the command shown there to get the password.
+
+I understood that the data was encoded using ROT13, but I did not fully understand the command I used to decode it.
+
+Command used
+
+cat data.txt | tr 'A-Za-z' 'N-ZA-Mn-za-m'
+
+What I learned
+
+The data was encoded using ROT13.
+ROT13 replaces each letter with another letter 13 positions away in the alphabet.
+I used the "tr" command to translate the characters.
+I still need to understand the "tr" command properly instead of just remembering the solution.
+Reflection
+
+This was one of the levels where I relied on a copied solution instead of fully understanding the command. I want to revisit this concept later.
+
+Level 12
+
+This level was quite confusing for me.
+
+I first tried to solve it myself, but I was getting what looked like garbage values and I could not understand what I was looking at. After that, I checked a YouTube tutorial to understand the approach.
+
+The tutorial introduced me to "xxd", which helped convert the hexadecimal data back into its original binary form. After that, I had to repeatedly identify the file type and decompress or extract it.
+
+During this process, I also learned and used commands such as "cp", "mv", and "rm".
+
+One important thing I learned was that when working with compressed or archived files, the correct file type/extension matters. For example:
+
+gzip → ".gz"
+bzip2 → ".bz2"
+tar → ".tar"
+The process involved repeatedly converting, identifying, renaming, and decompressing the files until I finally reached the password.
+
+Commands / Tools I Used
+
+xxd file cp mv rm
+
+I also used different commands for extracting/decompressing the files depending on their file type.
+
+What I Learned
+
+How hexadecimal data can be converted back into binary data using "xxd".
+How to identify files using "file".
+How to work with different compression formats.
+Basic use of "cp", "mv", and "rm".
+File extensions can be important when working with compression/decompression tools.
+Sometimes a challenge can look like meaningless/garbage data until the correct representation is restored.
+Reflection
+
+I initially could not solve this level by myself and used a YouTube tutorial to understand the approach. However, while following it, I learned several new Linux commands and concepts that I had not understood before.
+
+Level 13
+
+This level was about using an SSH private key to log in to the next Bandit account.
+
+I copied the private key to my machine and then changed its permissions using "chmod". After that, I used SSH with the "-i" option to specify the private key.
+
+Commands used
+
+chmod [permission] sshkey.private
+
+Then I connected using the private key:
+
+ssh -i ./sshkey.private bandit14@localhost -p 2220
+
+After logging in, I used:
+
+cat /etc/bandit_pass/bandit14
+
+What I learned
+
+What an SSH private key can be used for.
+How to specify an SSH identity/private key using "-i".
+Linux file permissions using "chmod".
+Why private key files may need their permissions changed before SSH will accept them.
+How to connect to another account using SSH key-based authentication.
+Reflection
+
+This level helped me understand that SSH does not always require a password. Authentication can also be performed using a private key.
+
+Level 14
+
+This level introduced me to Netcat ("nc").
+
+I did not understand how Netcat worked initially, so I watched a YouTube tutorial. The video explained the basic syntax clearly, and I was able to understand the difference between a client and a server.
+
+I also learned that Netcat can be used as a listener on the server side and as a client when connecting to a service.
+
+Command used
+
+nc localhost 30000
+
+I then provided the required password to the service.
+
+Netcat concepts I learned
+
+A basic listener can be started using options such as:
+
+nc -lvn
+
+"-l" → listen mode
+"-v" → verbose output
+"-n" → do not perform DNS resolution
+I learned that the listener acts as the server, while the machine connecting to it acts as the client.
+
+What I learned
+
+Basic use of Netcat ("nc")
+Client and server concepts
+Listening on a port
+Connecting to a service on a specific port
+Basic network communication using Netcat
+Reflection
+
+This was one of the levels where I learned something new from a YouTube tutorial and actually understood the concept instead of just copying the command. After understanding how Netcat works, the syntax made much more sense to me.
+
+Level 15
+
+This level was quite confusing for me.
+
+I tried many different things while solving it. Sometimes I was thinking about the server side, sometimes the client side, and sometimes I was trying different addresses and Netcat commands without really understanding what was required.
+
+I spent a lot of time reading the manual, but I could not figure it out. After struggling for a long time, I finally checked a YouTube tutorial.
+
+The tutorial helped me understand that this level required an encrypted connection, so I needed to use OpenSSL instead of using Netcat alone.
+
+After that, I read about OpenSSL and its "s_client" command. I started understanding the syntax and eventually used:
+
+Command used
+
+openssl s_client -connect localhost:30001
+
+I then provided the required password through the connection.
+
+What I learned
+
+Netcat and OpenSSL are not used for exactly the same purpose.
+An encrypted connection may require TLS/SSL.
+OpenSSL provides tools for working with SSL/TLS.
+"openssl s_client" can act as a client for an SSL/TLS connection.
+"-connect" is used to specify the host and port to connect to.
+I learned more about the difference between a normal network connection and an encrypted connection.
+Reflection
+
+This level took me much longer than the previous one. I spent hours experimenting with different commands and reading the manual without getting the correct result.
+
+Eventually, I used a YouTube tutorial to understand the missing concept. After learning about OpenSSL and SSL/TLS, the command made much more sense.
+
+This level taught me that sometimes I may know the networking basics but still need to learn the specific protocol or tool being used.
+
+Level 16
+
+This level was confusing at first, but I learned several new things while solving it.
+
+I started by scanning the available ports. Instead of immediately knowing which port was the correct one, I checked the ports one by one after finding the open ports. I found two open ports and tried connecting to both of them. Eventually, one of them connected successfully.
+
+I had already learned about OpenSSL in the previous level, but I forgot the exact syntax. I went back to my previous notes and used them to remember how to connect using OpenSSL.
+
+Commands / Tools I Used
+
+nmap openssl s_client chmod
+
+I used Nmap to scan the required port range and then used OpenSSL to connect to the appropriate SSL/TLS service.
+
+Other Things I Learned
+
+While working on this level, I also watched a YouTube video about network traffic. This helped me understand that scanning many ports generates network traffic because the scanner sends requests/probes to the target.
+
+I also learned more about Linux file permissions and "chmod".
+
+I learned the meaning of:
+
+"u" → user/owner
+"g" → group
+"o" → others
+"a" → all
+I also learned that permissions can be represented using numbers.
+
+For example:
+
+r = 4 w = 2 x = 1
+
+So permissions can be combined numerically, such as:
+
+7 = 4 + 2 + 1
+
+Reflection
+
+I did not solve this level in a completely straightforward way. I experimented with different ports and connection methods before finding the correct service.
+
+I also forgot the OpenSSL syntax and had to look back at my previous notes. This reminded me that forgetting a command does not mean I have forgotten the concept—I can go back to my notes and reconstruct it.
+
+Level 17
+
+I used a YouTube tutorial for this level because I did not know about the "diff" command.
+
+The tutorial introduced me to the "-y" option, which displays the contents of two files side by side. I used it to compare the two files and find the difference between them.
+
+Command used
+
+diff -y passwords.old passwords.new
+
+The side-by-side output made it easier to see which line was different. The different line contained the required password.
+
+What I learned
+
+The "diff" command can be used to compare files.
+The "-y" option displays the comparison side by side.
+The order in which filenames are given matters when reading the output.
+The first file is displayed on the left and the second file on the right.
+Side-by-side comparison can make differences much easier to understand.
+Reflection
+
+I learned this command from a YouTube tutorial because I was not familiar with "diff". The "-y" option was especially useful because I could visually compare both files instead of trying to understand the difference from a normal "diff" output.
+
+Level 18
+
+I used Google to understand this level because I was not immediately sure how to deal with the automatic logout.
+
+While solving it, I learned about the "-t" option in SSH and also understood that commands can be executed directly through an SSH connection instead of always opening an interactive shell.
+
+This level also helped me understand that the output of one command can be passed to another command using a pipe ("|"), which made me think more about combining Linux commands.
+
+Command / Option I Learned
+
+ssh -t
+
+The "-t" option is used to allocate a pseudo-terminal.
+
+What I Learned
+
+SSH can execute commands directly on a remote machine.
+"-t" allocates a pseudo-terminal.
+Commands can be combined using the pipe ("|").
+A remote shell is not always necessary when I only need to execute a command.
+Reflection
+
+I needed Google to understand this level, but while researching the solution I learned more about SSH and command chaining instead of only focusing on getting the password.
+
+Level 19
+
+This level confused me at first.
+
+I initially treated the user/account information as if it were a file and tried to read it, which resulted in many errors.
+
+After several attempts, I realized that I first needed to understand what I was actually dealing with — a user, a file, or an executable.
+
+I then checked a YouTube tutorial to understand the concept. This helped me understand that the file "bandit20-do" was a SUID executable owned by the "bandit20" user.
+
+When the executable is run, it runs with the privileges of its owner, "bandit20".
+
+Command used
+
+./bandit20-do cat /etc/bandit_pass/bandit20
+
+What I learned
+
+The difference between a user/account and a file.
+How to identify what an object actually is before trying to use it.
+What SUID means.
+A SUID executable can run with the privileges of its owner.
+How "./" is used to execute a program from the current directory.
+How an executable can be used to run another command with its available privileges.
+Reflection
+
+My biggest mistake in this level was not identifying what I was working with before trying commands. I spent a lot of time getting errors because of that.
+
+After understanding that "bandit20-do" was an executable rather than a normal file, the purpose of the level became much clearer.
+
+Level 20
+
+This was one of the hardest levels for me.
+
+Because I had learned about OpenSSL in an earlier level, I started thinking that OpenSSL was related to encrypted connections, while Netcat ("nc") was mainly for unencrypted connections. I also initially misunderstood other networking tools and what they were actually used for.
+
+I read several manuals and tried Netcat in different ways, but I kept getting strange outputs and could not understand what was happening.
+
+I tried to solve it myself, then searched on Google, and finally checked a YouTube tutorial when I still could not figure it out.
+
+The tutorial showed me a method using "echo" and Netcat. One thing that confused me was the "&" at the end of the command.
+
+I wanted to understand why it was there, so I initially left it out. My terminal then appeared to be stuck because the process was still running in the foreground.
+
+I learned that "&" allows a command to run in the background, which leaves the terminal available for other commands.
+
+Commands / Concepts I Used
+
+A listener was started using Netcat with UDP:
+
+echo "" | nc -nlup &
+
+After starting the listener, I used the provided "suconnect" program to connect to it:
+
+./suconnect
+
+I had to use another port because the ports I was experimenting with were already in use.
+
+What I Learned
+
+Netcat ("nc") can be used for network communication.
+TCP and UDP are different transport protocols.
+"-l" puts Netcat into listening mode.
+"-u" selects UDP.
+"-n" prevents DNS resolution.
+"-p" specifies the local port.
+"&" runs a command in the background.
+A process running in the foreground can keep the terminal occupied.
+A listener acts as the server side, while the program connecting to it acts as the client side.
+I need to distinguish between tools based on their actual purpose instead of assuming that every networking tool deals with encryption.
+Reflection
+
+My biggest mistake in this level was that I kept trying to become the server when I actually needed to understand the client/server relationship required by the challenge.
+
+I spent a lot of time reading manuals and experimenting with Netcat. I eventually used Google and then a YouTube tutorial to understand the intended approach.
+
+The most useful thing I learned was not just the final command, but why the "&" was needed and how the listener and connecting program were supposed to interact.
+
+This level was frustrating, but it gave me a much better understanding of processes, ports, listeners, clients, servers, TCP/UDP, and background processes.
+
+Level 22
+
+I did not write many notes for this level, so I do not remember the complete process clearly.
+
+I remember navigating to the cron configuration directory and checking the cron job for Bandit 22.
+
+Commands I Remember
+
+cd /etc/cron.d cat cronjob_bandit22
+
+After reading the cron job, I followed the script/output it pointed to and experimented with temporary files while trying to understand where the password was being generated or stored.
+
+I do not remember the exact commands I used after this, so I am not going to recreate them from memory.
+
+What I Learned
+
+Cron jobs can automatically execute commands/scripts.
+"/etc/cron.d" contains cron job configurations.
+A cron configuration can point to a script that performs the actual task.
+Reading the configuration first helps understand what is being executed.
+Reflection
+
+My notes for this level are incomplete, so I am documenting only the parts I can remember confidently rather than inventing the missing commands.
+
+Level 23
+This was one of the most frustrating levels for me.
+The level involved a cron job and a shell script. I initially tried to solve it by copying the script and modifying it repeatedly.
+I kept changing the script, running it again, and checking the terminal to see what happened. Many times nothing happened, and sometimes I ended up outside the terminal/session and had to start again.
+I also read documentation and tried running several different scripts and commands, but I still did not properly understand what was happening.
+After struggling with it for several days, I finally used ChatGPT to go through the script line by line. That helped me understand the purpose of individual commands and how the whole script was supposed to work.
+I still do not consider the script completely clear to me, but I understand it much better than when I started.
+What I Learned
+Cron jobs can automatically execute scripts.
+Shell scripts can combine multiple commands into one automated process.
+File permissions matter when a script needs to be executed.
+A script can be modified and executed repeatedly to test how it behaves.
+Reading documentation is important when working with unfamiliar commands.
+Understanding a script line by line is much better than blindly copying it.
+Reflection
+This level took me much longer than most of the previous levels.
+I repeatedly copied the script, changed different parts, executed it, and tried to understand the output. I also spent time reading documentation but still could not properly understand the complete process.
+After a few days, I used ChatGPT to break down the script line by line. Even after that, I still have some gaps in my understanding, but I learned an important lesson:
+If I cannot understand a script as a whole, I should break it down and understand one line at a time.
+This was probably one of the biggest learning experiences of the Bandit wargame for me.
+Level 24
+This level took me around 2–3 days to complete. It was one of the levels where I experimented a lot with scripting.
+The challenge required trying a large number of possible PINs along with the password. Instead of manually trying them, I decided to write my own script.
+My First Attempts
+I tried writing several scripts using things I already knew, including:
+"if"
+"else"
+"while"
+Conditions
+Loops
+I made around 5–7 different scripts while trying to get one working.
+Some of my scripts stopped unexpectedly after only a small number of attempts. Sometimes they ran around 8 times, sometimes 11, sometimes 22 times, and then stopped.
+I kept adding conditions and changing the script because I wanted to figure out why it was stopping.
+At one point, I was also confused about the exact format of the PINs. I tried different separators and formatting, including adding dots and dashes in different places.
+None of my first scripts worked.
+Learning From the Tutorial
+Eventually, I sat down and properly watched a YouTube tutorial.
+The tutorial explained an important part that I had missed: sending every request individually was not an efficient approach. The service had to deal with a large number of requests, so the script needed to handle the attempts efficiently rather than repeatedly creating unnecessary connections.
+I then used the approach shown in the tutorial and successfully completed the level.
+Bash Script
+I also learned how to work with Bash scripts more properly.
+I learned that a Bash script can use the ".sh" extension and that a script can be given execute permission using "chmod".
+For example:
+chmod +x script.sh
+I also worked with the "/tmp" directory while testing my script.
+What I Learned
+How loops can automate repetitive tasks.
+How "if"/"else" conditions can be used inside scripts.
+How to create and run Bash scripts.
+The purpose of the ".sh" extension.
+How "chmod +x" makes a script executable.
+Why repeatedly creating connections can be inefficient.
+How automation can make brute-force testing practical in a controlled CTF environment.
+Debugging a script by repeatedly changing and testing it.
+Reflection
+This level was frustrating because I wanted to solve it completely by myself.
+I wrote around 5–7 different scripts and kept changing the conditions, but none of them worked. I spent a lot of time experimenting with the PIN format and the way requests were being sent.
+Eventually, I watched a tutorial carefully and understood that my approach was inefficient. I then used the demonstrated approach and completed the level.
+The biggest thing I learned from this level was that writing a script is not enough — I also need to understand how the program or server receiving the requests behaves.
+Level 25
+I do not have notes for this level, so I do not remember the exact sequence of commands.
+I remember connecting through the SSH setup from the previous level and working with the shell/login behavior. I used a pipe ("|") while experimenting with the shell and eventually managed to obtain the required SSH key.
+I then copied the key and used it for the next level.
+I do not remember the exact command I used, so I am intentionally not adding a command from memory that I cannot verify.
+What I Remember Learning
+SSH authentication using a private key.
+Understanding that a user's login shell can affect what happens after connecting.
+Using pipes to pass command output to another command.
+Copying and reusing an SSH private key for the next level.
+Reflection
+My notes for this level are missing, so this section is based only on what I currently remember. I would rather leave the exact command undocumented than invent one after the fact.
+Level 26
+This level was probably one of the most frustrating levels for me.
+After connecting, the session kept exiting/closing, and I could not understand why. I knew that the previous level involved a special shell and a text editor, but I could not figure out how they were connected.
+I tried following the documentation and YouTube tutorials. I eventually reached the text editor, but even there I kept getting confused.
+Sometimes the cursor moved to a different line, sometimes I accidentally changed the text, and sometimes Backspace/Delete did something I did not expect. I also tried pressing "v" repeatedly because I had seen it used to enter the editor, but it did not always behave the way I expected.
+The tutorials I watched used a particular terminal height/size, but the same value did not work for me. I experimented with different values until I finally found one that allowed the required interaction to work.
+After several attempts, I finally managed to use the editor interaction correctly and complete the level.
+What I Learned
+The terminal's size can affect the behaviour of interactive programs.
+"more" can provide an interactive environment when the output does not fit on the screen.
+"v" can open the configured editor from "more".
+Terminal editors have their own commands and behaviour.
+SSH sessions can behave very differently depending on the user's configured shell.
+Small changes in terminal dimensions can sometimes make a big difference when working with interactive programs.
+Reflection
+This level caused me a lot of frustration because I knew roughly what I was supposed to do but could not reproduce the tutorial exactly.
+I kept trying different terminal sizes and editor interactions. The tutorial worked for other people with one value, but that same value did not work for me, so I had to experiment until I found a working setup.
+I also made many mistakes inside the text editor because I was still unfamiliar with its controls.
+Eventually, after trying different approaches and learning from documentation and tutorials, I managed to complete the level.
+This level taught me that sometimes the environment itself — such as terminal size and editor behaviour — can affect whether a technique works.
+Level 27
+This level introduced me to Git, and it was another level where I had to learn a completely new tool.
+Before solving the level, I installed Git locally after reading the Bandit documentation. However, I had changed my password around this time, which caused problems with my previous setup. I eventually had to go back and complete Level 26 again before continuing.
+Learning Git
+I realized that I did not need to learn every feature of Git just to solve the challenge.
+This level taught me an important learning habit:
+«Learn what is necessary for the problem in front of you. Do not try to learn the entire tool at once.»
+I used Google to find useful Git documentation and learned the basic syntax required for the challenge.
+My Problems
+I made many syntax mistakes while trying to clone the repository.
+For example, I sometimes:
+Added a semicolon where it was not needed.
+Forgot to write "repo".
+Forgot to write "git".
+Forgot to use "clone".
+Forgot to specify the port.
+Tried commands from the wrong environment.
+At first, I also tried doing everything from inside the Bandit environment. I then realized that the machine I was using and the Bandit server were different environments with different network addresses, which explained some of the connection errors.
+I eventually tried the Git operation from my own machine, where I was able to clone the repository successfully.
+After finding the repository, I inspected its contents and eventually read the relevant file:
+cat
+The password was present in the repository.
+What I Learned
+Basic Git usage.
+How "git clone" works.
+Git repositories can be hosted remotely.
+The difference between my local machine and a remote server.
+Network addresses can be different between different machines/environments.
+Correct command syntax matters.
+A small typo can completely change the result of a command.
+I do not need to learn every feature of a tool before using it.
+Reflection
+This level taught me something beyond Git itself.
+Initially, I thought I needed to understand everything about Git before continuing. I spent time reading about it and made many syntax mistakes.
+Eventually, I realized that I only needed to learn the Git concepts required for the challenge and use documentation when I needed something specific.
+I also learned that when a command fails, I should first check where I am running it and what machine/environment I am connected to.
+After fixing the environment and syntax issues, I successfully cloned the repository, inspected the files, and found the password.
+Level 28
+I continued learning Git in this level, and I was somewhat familiar with it by this point.
+I first tried to remove the previous repository using:
+rm repo
+This did not work because the repository contained directories and files. I then learned to use:
+rm -rf repo
+After removing it, I cloned the repository again.
+I found a Markdown file inside the repository and used Google to understand how to inspect the Git history.
+I already knew about "git log", so I ran:
+git log
+This showed me the commit history.
+I looked through the commits and followed the relevant commit information to inspect the repository history further. I copied the commit information and used it to inspect the changes.
+What I Learned
+Basic use of "rm" and "rm -rf".
+How to clone a Git repository again.
+How "git log" shows commit history.
+Git commits can contain information that is no longer visible in the current version of a file.
+Repository history can contain hidden or useful information.
+Reflection
+This level was easier for me than Level 27 because I already had some understanding of Git.
+The main thing I learned was that Git history is important. Even if information is removed from the current version of a file, it may still exist in previous commits.
+Level 29
+This level focused on Git branches.
+I read the Git documentation and identified the available branches. I then switched to the relevant branch and inspected the commit information.
+I was initially confused about the difference between "git switch" and "git checkout". After reading the documentation, I understood that both can be used to switch branches, although "git switch" is a newer command focused specifically on switching branches.
+Commands / Concepts I Used
+git branch -a
+git switch
+git checkout
+git show
+I used the branch information to find the relevant branch and then inspected the commit.
+What I Learned
+How Git branches work.
+How to list branches using "git branch -a".
+How to switch branches using "git switch".
+"git checkout" can also be used to switch branches.
+How "git show" can be used to inspect commit information.
+Important information may exist on a branch that is not currently checked out.
+Reflection
+This level was not as difficult once I understood the concept of branches.
+The main difficulty was finding the correct branch and understanding where the required information was stored.
+After I found the correct branch and commit, the level became much easier.
+
+Level 31
+This level was another difficult Git level for me.
+Before starting, I watched a video about Git because I wanted to understand the basic Git workflow. Because of that, I already had some understanding of "git push", but I still did not fully understand what the challenge wanted me to do.
+I searched Google and learned that I needed to create a file called "key.txt" and put the required content inside it.
+I created the file using:
+nano key.txt
+I entered the required text and saved the file.
+The challenge required the file to be pushed to the "master" branch. I initially tried to inspect my changes with Git commands, including "git show", and also got confused about the branch I was working on.
+Eventually, when I tried to add the file, Git did not want to add it because the repository's ".gitignore" contained a rule for ".txt" files.
+I learned that ".gitignore" tells Git which files it should normally ignore.
+To add the required file anyway, I used:
+git add -f key.txt
+The "-f" option forces Git to add a file even when it is ignored.
+After that, I committed the change:
+git commit -m "add key"
+I also learned that the commit message describes the change being committed.
+Finally, I pushed the commit to the required branch:
+git push origin master
+The remote repository processed my push and returned the password for the next level.
+What I Learned
+How to create and edit a file using "nano".
+How Git's staging area works.
+"git add" stages changes for a commit.
+"git add -f" can force-add an ignored file.
+"git commit -m" creates a commit with a message.
+"origin" is the name of the remote repository.
+"master" is the branch being pushed to.
+"git push origin master" pushes the local commit to the remote "master" branch.
+Git has a complete workflow: create/change → stage → commit → push.
+Reflection
+This level was confusing even though I had already learned the basic idea of "git push".
+I had to search Google several times because I kept running into errors. I also got confused about branches and why my changes were not appearing where I expected.
+The biggest thing I learned was that Git does not simply push every file I create. The file has to be tracked, staged, committed, and then pushed.
+I also learned about why "git add -f" was necessary for this particular challenge.
+Once I understood the complete workflow, I was finally able to push the required file and complete the level.
+Level 32
+This level was very confusing at first, but the challenge itself gave an important clue about the shell.
+The shell was converting the commands I entered into uppercase letters. For example, if I entered:
+ls
+it would effectively become:
+LS
+Because Linux commands are generally case-sensitive, normal commands were not working as expected.
+I started experimenting with shell variables and different ways of trying to get lowercase commands to work.
+I tried things such as:
+$Y=echo "ls"
+and experimented with variables such as "$S". I also tried "$1", "$2", "$3", and "$4" after reading that positional parameters can have special meanings in shell scripting.
+None of these attempts worked.
+I then searched for the solution and learned about "$0". After understanding what "$0" represents in the context of a shell/script, I was able to use it to get back to a normal shell environment.
+From there, normal commands started working again.
+I then used:
+ls
+After finding the required information, I moved to the parent directory:
+cd ..
+Then I entered the next level's directory/account context and read its README:
+cd bandit33 cat README
+This allowed me to complete the final Bandit level.
+What I Learned
+Shell commands are case-sensitive.
+A shell can modify or interpret input before executing it.
+Shell variables can have special meanings.
+"$0" has a special meaning in shell scripting and can refer to the name/path used to invoke the shell or script.
+Positional parameters such as "$1", "$2", etc. have special meanings in shell scripts.
+Understanding how the shell interprets input can be just as important as knowing Linux commands.
+Reflection
+This level involved a lot of experimentation.
+I initially tried to force lowercase commands using variables and experimented with "$1", "$2", "$3", and "$4", but I did not understand what I was doing.
+Eventually, I checked the solution and learned about "$0". Once I understood why it worked, I was able to regain a normal shell and complete the level.
+This level taught me that when a command is not behaving normally, I should investigate the shell itself rather than assuming that the command is broken.
+Bandit Completion
+This was the final level of the Bandit wargame that I completed.
+The entire journey introduced me to Linux commands, file permissions, SSH, networking, scripting, Git, cron jobs, shell behaviour, and many other concepts.
+Not every level was solved independently, and several levels required documentation, Google, or YouTube. However, each difficult level introduced me to something new that I could learn and revisit later.
+Note:- This was my first documentation, and since I am not very confident in English, I created it with the help of ChatGPT.
