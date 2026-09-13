@@ -1,0 +1,617 @@
+Windows Fundamentals 1, 2 & 3
+
+«Notes from TryHackMe — Windows Fundamentals
+Focus: Windows system tools, configuration, security, networking, and command-line utilities.»
+
+---
+
+1. Windows System Tools
+
+Computer Management — "compmgmt.msc"
+
+Computer Management is a central console for managing different parts of Windows.
+
+Main sections:
+
+- System Tools
+- Storage
+- Services and Applications
+
+Useful for managing users, disks, services, event logs, and other system components.
+
+---
+
+System Information — "msinfo32"
+
+Displays detailed information about the Windows system.
+
+It can show:
+
+- Hardware information
+- System components
+- Software environment
+- Windows version
+- System resources
+
+Command:
+
+msinfo32
+
+---
+
+IP Configuration — "ipconfig /all"
+
+Displays detailed network configuration information.
+
+It can show:
+
+- IP address
+- Subnet mask
+- Default gateway
+- MAC address
+- DNS servers
+- DHCP information
+
+Command:
+
+ipconfig /all
+
+---
+
+Registry Editor — "regedit.exe" / "regedt32.exe"
+
+Windows Registry Editor is used to view and modify the Windows Registry.
+
+The Registry stores important configuration information used by Windows and applications.
+
+regedit
+
+«"regedt32.exe" is associated with the Registry Editor on modern Windows systems.»
+
+⚠️ Important: Changing registry values incorrectly can cause Windows or applications to malfunction.
+
+---
+
+System Configuration — "msconfig"
+
+System Configuration is useful for troubleshooting Windows startup and system configuration.
+
+msconfig
+
+It provides options related to:
+
+- Boot configuration
+- Services
+- Startup-related settings
+- Tools
+- General system startup modes
+
+---
+
+Windows Directory Variable — "%windir%"
+
+"%windir%" is a Windows environment variable that points to the Windows installation directory.
+
+Example:
+
+%windir%
+
+Usually this points to:
+
+C:\Windows
+
+---
+
+Local Users and Groups — "lusrmgr.msc"
+
+Used to manage local:
+
+- User accounts
+- Groups
+
+Command:
+
+lusrmgr.msc
+
+«Availability can depend on the Windows edition.»
+
+---
+
+2. User Account Control (UAC)
+
+UAC — User Account Control
+
+UAC helps prevent unauthorized changes to Windows.
+
+When an application or user attempts to perform an action requiring elevated privileges, Windows may display a UAC prompt.
+
+Example:
+
+Do you want to allow this app to make changes to your device?
+
+The purpose of UAC is to reduce the chance that unwanted software can make system-level changes without the user's approval.
+
+---
+
+3. Windows Security & Microsoft Defender
+
+Scan Types
+
+Windows Security / Microsoft Defender provides different scanning options.
+
+Quick Scan
+
+Scans common locations where threats are likely to be found.
+
+Quick Scan → Faster scan of commonly targeted areas
+
+---
+
+Full Scan
+
+Scans files and running programs across the system.
+
+Full Scan → More comprehensive scan
+
+A Full Scan can take significantly longer depending on the number of files and system performance.
+
+«It does not always take exactly 1 hour; the duration varies.»
+
+---
+
+Custom Scan
+
+Allows you to choose a specific file, folder, or location to scan.
+
+Custom Scan → Scan the location you select
+
+---
+
+Scan History / Last Scan
+
+Windows Security keeps information about previous scans and detected threats.
+
+Important: "Last scan" means information about the most recent scan; it does not mean Defender automatically performs a scan every time you look at that section.
+
+---
+
+Threat Actions
+
+Quarantined Threat
+
+A detected threat that has been isolated so that it cannot normally run on the device.
+
+Detected → Quarantined → Isolated from the system
+
+Quarantining helps prevent the detected item from causing further harm.
+
+---
+
+Allowed Threat
+
+A detected item that the user has explicitly allowed to run or remain on the device.
+
+Threat detected → User chooses Allow → Item becomes an allowed threat
+
+⚠️ Only allow an item when you are confident that it is safe.
+
+---
+
+4. Windows Firewall
+
+"WF.msc"
+
+"wf.msc" opens the Windows Defender Firewall with Advanced Security console.
+
+wf.msc
+
+It can be used to manage firewall rules related to:
+
+- Inbound connections
+- Outbound connections
+- Network profiles
+- Firewall rules
+
+---
+
+Network Profiles
+
+Windows commonly uses three network profiles.
+
+Domain
+
+Used when the computer is connected to a domain-based network and authenticates with a domain controller.
+
+Domain → Organization / enterprise network
+
+---
+
+Private
+
+Used for networks that you trust, such as a home or private network.
+
+Private → Trusted network
+
+---
+
+Public
+
+Used for networks that are not trusted, such as:
+
+- Airport Wi-Fi
+- Hotel Wi-Fi
+- Public hotspots
+- Café Wi-Fi
+
+Public → Untrusted / less-trusted network
+
+---
+
+5. TPM & BitLocker
+
+TPM — Trusted Platform Module
+
+TPM is a hardware-based security component used to securely store and process cryptographic information.
+
+It can help with:
+
+- Device security
+- Key protection
+- BitLocker
+- Secure boot-related security features
+
+---
+
+TPM + Removable Drive
+
+On supported systems, BitLocker can use a removable USB drive containing a startup key.
+
+This can be used as part of the process of unlocking a protected Windows drive.
+
+TPM
+ +
+USB startup key
+ =
+Additional BitLocker authentication option
+
+THM may refer to TPM 1.2 or later in the context of this feature.
+
+---
+
+VSS — Volume Shadow Copy Service
+
+VSS stands for:
+
+Volume Shadow Copy Service
+
+It is a Windows service that allows Windows and applications to create consistent snapshots/copies of files or volumes.
+
+It is used by features such as:
+
+- Backup systems
+- System Restore
+- Other applications requiring consistent snapshots
+
+---
+
+6. Windows Command-Line Fundamentals
+
+"ver"
+
+Displays the Windows version.
+
+ver
+
+Example purpose:
+
+Check the Windows OS version
+
+---
+
+"systeminfo"
+
+Displays detailed information about the Windows system.
+
+systeminfo
+
+It can provide information such as:
+
+- OS name
+- OS version
+- System manufacturer
+- System model
+- System type
+- Installed memory
+- Boot time
+- Network information
+- Hotfix information
+
+---
+
+7. Network Connections — "netstat"
+
+"netstat" displays network connections, routing information, and network statistics.
+
+A useful command is:
+
+netstat -abno
+
+"-a"
+
+Displays:
+
+- Active connections
+- Listening ports
+
+---
+
+"-b"
+
+Shows the executable/program associated with each connection or listening port.
+
+-b → Which program/executable is using the connection
+
+This option may require sufficient privileges.
+
+---
+
+"-o"
+
+Displays the Process ID (PID) associated with each connection.
+
+-o → PID
+
+You can then use the PID with commands such as "tasklist" or "taskkill".
+
+---
+
+"-n"
+
+Displays addresses and port numbers in numerical form.
+
+-n → Numerical addresses and ports
+
+«Correction: The option for numerical output is "-n", not "-h".»
+
+---
+
+Useful combination
+
+netstat -abno
+
+This can help connect:
+
+Network connection
+       ↓
+Port
+       ↓
+Executable
+       ↓
+PID
+
+---
+
+8. File & Directory Commands
+
+"dir"
+
+Lists files and directories.
+
+dir
+
+---
+
+"dir /a"
+
+Displays files and directories including hidden/system items.
+
+dir /a
+
+---
+
+"dir /s"
+
+Displays files in the current directory and its subdirectories.
+
+dir /s
+
+---
+
+Combining Options
+
+dir /a /s
+
+Displays hidden/system items while also searching through subdirectories.
+
+---
+
+9. Reading Files
+
+"type"
+
+Displays the contents of a text file.
+
+type file.txt
+
+Best suited for shorter text files.
+
+---
+
+"more"
+
+Displays text page-by-page, making it easier to read long files.
+
+more file.txt
+
+---
+
+10. File Management Commands
+
+"copy"
+
+Copies a file from one location to another.
+
+copy source.txt destination.txt
+
+---
+
+"move"
+
+Moves a file or directory.
+
+move source.txt destination
+
+---
+
+"del" / "erase"
+
+Deletes files.
+
+del file.txt
+
+or:
+
+erase file.txt
+
+«Be careful with delete commands because deleted files may not be easily recoverable.»
+
+---
+
+11. Process Management
+
+"tasklist"
+
+Displays currently running processes.
+
+tasklist
+
+---
+
+Filtering with "/fi"
+
+"/fi" means filter.
+
+Example:
+
+tasklist /fi "imagename eq sshd.exe"
+
+This filters the results to show processes whose image name is:
+
+sshd.exe
+
+---
+
+"eq"
+
+"eq" means:
+
+Equal to
+
+So:
+
+imagename eq sshd.exe
+
+means:
+
+Image name = sshd.exe
+
+---
+
+12. Terminating a Process
+
+"taskkill"
+
+Used to terminate a running process.
+
+Using PID:
+
+taskkill /pid TARGET_PID
+
+Example:
+
+taskkill /pid 1234
+
+Where:
+
+1234 → Target Process ID (PID)
+
+You can first find the PID using:
+
+tasklist
+
+and then use:
+
+taskkill /pid 1234
+
+«Terminating system-critical processes can cause applications or Windows to become unstable.»
+
+---
+
+13. Quick Command Reference
+
+Command| Purpose
+"compmgmt.msc"| Computer Management
+"msinfo32"| System Information
+"ipconfig /all"| Detailed network configuration
+"regedit"| Registry Editor
+"msconfig"| System Configuration
+"%windir%"| Windows directory environment variable
+"lusrmgr.msc"| Local Users and Groups
+"wf.msc"| Windows Firewall with Advanced Security
+"ver"| Windows version
+"systeminfo"| Detailed system information
+"netstat -abno"| Network connections + executables + PIDs + numeric output
+"dir /a"| Includes hidden/system items
+"dir /s"| Includes subdirectories
+"type"| Display text file
+"more"| Display text page-by-page
+"copy"| Copy files
+"move"| Move files
+"del" / "erase"| Delete files
+"tasklist"| List running processes
+"taskkill"| Terminate a process
+
+---
+
+14. Important Options to Remember
+
+/fi  → Filter
+eq   → Equal to
+
+-a   → All connections/listening ports
+-b   → Executable associated with connection
+-o   → Process ID (PID)
+-n   → Numerical addresses and ports
+
+Example workflow
+
+netstat -ano
+
+Find a connection → identify its PID → check the process:
+
+tasklist
+
+Filter a particular process:
+
+tasklist /fi "imagename eq sshd.exe"
+
+Terminate a process by PID:
+
+taskkill /pid 1234
+
+---
+
+Key Takeaways
+
+- "msinfo32" → detailed system information
+- "ipconfig /all" → detailed network configuration
+- "msconfig" → system/startup troubleshooting
+- "lusrmgr.msc" → local users and groups
+- "wf.msc" → advanced Windows Firewall
+- "UAC" → helps prevent unauthorized system changes
+- "TPM" → hardware-based security/key protection
+- "VSS" → creates consistent volume snapshots
+- "netstat" → network connections and listening ports
+- "tasklist" → running processes
+- "taskkill" → terminate processes
+- "dir", "type", "copy", "move", "del" → basic file management
