@@ -1,0 +1,726 @@
+# Active Directory (AD) — Windows Fundamentals
+
+## 1. What is Active Directory?
+
+**Active Directory (AD)** is a directory service used by Windows domains to centrally manage **users, computers, services, security policies, and other network objects**.
+
+A **Windows Domain** is a group of users and computers managed under a common administration, usually by an organisation.
+
+The server that runs Active Directory Domain Services is called a:
+
+**Domain Controller (DC)**
+
+### Easy way to remember
+
+```text
+Active Directory
+      ↓
+Central management system
+      ↓
+Users + Computers + Policies + Resources
+```
+
+---
+
+# 2. Advantages of a Windows Domain
+
+### Centralised Identity Management
+
+Users across the network can be managed centrally through Active Directory.
+
+Instead of creating and managing accounts separately on every computer, administrators can manage domain accounts from AD.
+
+```text
+          Active Directory
+                 ↓
+       ┌─────────┼─────────┐
+       ↓         ↓         ↓
+     User 1    User 2    User 3
+```
+
+### Security Policy Management
+
+Administrators can configure security policies centrally and apply them to users and computers across the organisation.
+
+---
+
+# 3. Active Directory Domain Services (AD DS)
+
+**AD DS (Active Directory Domain Services)** is the core service behind a Windows Domain.
+
+It acts like a **directory/catalogue** containing information about objects in the network.
+
+Objects can include:
+
+* Users
+* Computers
+* Groups
+* Printers
+* Servers
+* Other network resources
+
+### Easy Example
+
+Think of AD DS like a company's **digital register**:
+
+```text
+Company
+ ├── Employees
+ ├── Computers
+ ├── Servers
+ ├── Groups
+ └── Other Resources
+```
+
+---
+
+# 4. Users in Active Directory
+
+A user account can represent different types of entities.
+
+### People
+
+Usually represents an actual person in the organisation.
+
+Example:
+
+```text
+Employee → sumit
+```
+
+### Services
+
+User accounts can also be created for services such as IIS or MSSQL.
+
+These are called **service accounts**.
+
+Service accounts generally receive only the permissions required for the service they run.
+
+```text
+Service Account
+      ↓
+Specific Service
+      ↓
+Only required privileges
+```
+
+---
+
+# 5. Important Security Groups
+
+| Security Group         | Purpose                                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Domain Admins**      | Administrative privileges over the entire domain                                                                  |
+| **Server Operators**   | Can administer Domain Controllers, with some restrictions                                                         |
+| **Backup Operators**   | Can perform backup/restore operations and access files regardless of normal file permissions in relevant contexts |
+| **Account Operators**  | Can create or modify many domain user/group accounts, subject to restrictions                                     |
+| **Domain Users**       | Contains domain user accounts                                                                                     |
+| **Domain Computers**   | Contains domain computer accounts                                                                                 |
+| **Domain Controllers** | Contains Domain Controller computer accounts                                                                      |
+
+### Most Important
+
+```text
+Domain Admins
+    ↓
+Highest-level domain administration
+```
+
+A Domain Administrator can generally administer systems across the domain, including Domain Controllers.
+
+---
+
+# 6. Organizational Units (OUs)
+
+Active Directory objects can be organised into **Organizational Units (OUs)**.
+
+OUs are container objects used to organise users and computers.
+
+Example:
+
+```text
+Company
+│
+├── IT
+│   ├── Users
+│   └── Computers
+│
+├── HR
+│   ├── Users
+│   └── Computers
+│
+└── Finance
+    ├── Users
+    └── Computers
+```
+
+OUs are especially useful for applying policies to particular groups of users or computers.
+
+---
+
+# 7. Default AD Containers / OUs
+
+Windows provides several default containers/OUs.
+
+### Builtin
+
+Contains built-in security groups.
+
+### Computers
+
+Contains computer accounts for machines that join the domain by default.
+
+### Domain Controllers
+
+Contains the Domain Controllers in the domain.
+
+### Users
+
+Contains default domain users and groups.
+
+### Managed Service Accounts
+
+Contains accounts designed for managing services.
+
+---
+
+# 8. Security Groups vs OUs
+
+This is an **important THM concept**.
+
+## Organizational Units (OUs)
+
+OUs are mainly used for:
+
+* Organising objects
+* Applying Group Policies
+* Managing users/computers according to organisational structure
+
+A user or computer object has **one direct OU location at a time**.
+
+Example:
+
+```text
+HR OU
+ ↓
+HR users receive HR-related policies
+```
+
+---
+
+## Security Groups
+
+Security Groups are mainly used for:
+
+* Granting permissions
+* Controlling access to resources
+
+A user can belong to **multiple security groups**.
+
+Example:
+
+```text
+User
+ ├── HR Group
+ ├── VPN Group
+ └── Printer Group
+```
+
+### Easy Difference
+
+```text
+OU
+↓
+"Where is this object organised?"
+"Which policies should apply?"
+
+Security Group
+↓
+"What resources can this user access?"
+```
+
+### Remember
+
+**OU → Organisation + Policies**
+
+**Group → Permissions + Access**
+
+---
+
+# 9. Delegation
+
+Administrators don't always need to give someone full Domain Administrator privileges.
+
+**Delegation** allows administrators to give specific users or groups permission to perform particular tasks on specific OUs.
+
+Example:
+
+```text
+Domain Admin
+     ↓
+Delegates specific permission
+     ↓
+IT Administrator
+     ↓
+Can manage selected OU
+```
+
+### Easy Example
+
+An HR administrator might be allowed to manage users inside the **HR OU** without being given full Domain Admin privileges.
+
+**Delegation = Give limited administrative control without giving full Domain Admin access.**
+
+---
+
+# 10. Types of Devices in an AD Domain
+
+## 1. Workstations
+
+Workstations are computers used by normal users for:
+
+* Daily work
+* Applications
+* Browsing
+* Accessing network resources
+
+Privileged accounts should generally **not** be used for normal workstation activities.
+
+```text
+User
+ ↓
+Workstation
+ ↓
+Daily work
+```
+
+---
+
+## 2. Servers
+
+Servers provide services and resources to users or other systems.
+
+Examples:
+
+* File servers
+* Web servers
+* Database servers
+
+```text
+Users
+  ↓
+Server
+  ↓
+Services / Resources
+```
+
+---
+
+## 3. Domain Controllers
+
+A **Domain Controller (DC)** manages the Active Directory domain.
+
+It is one of the most sensitive systems in an AD environment because it contains critical identity and authentication information.
+
+```text
+Domain Controller
+       ↓
+Active Directory
+       ↓
+Users + Groups + Computers + Policies
+```
+
+---
+
+# 11. Group Policy Objects (GPO)
+
+Windows uses **Group Policy Objects (GPOs)** to manage policies centrally.
+
+A GPO is a collection of settings that can be applied to users and/or computers.
+
+GPOs can be linked to OUs and used to establish security and configuration baselines.
+
+### Example
+
+An organisation wants all computers in the Finance OU to:
+
+* Use a particular security configuration
+* Enforce password-related settings
+* Configure Windows features in a standard way
+
+A GPO can be used to apply those settings.
+
+### Easy Relationship
+
+```text
+OU
+ ↓
+GPO
+ ↓
+Policies
+ ↓
+Users / Computers
+```
+
+---
+
+# 12. Authentication in Windows Domains
+
+In a Windows Domain, authentication is handled centrally through the domain infrastructure.
+
+Two important authentication protocols are:
+
+### Kerberos
+
+* Modern/default authentication protocol in Active Directory domains
+* Uses **tickets**
+* Provides authentication to network services
+
+### NetNTLM
+
+* Older/legacy authentication protocol
+* Kept mainly for compatibility with older systems and scenarios
+
+```text
+Kerberos → Modern / Default
+NetNTLM  → Legacy / Compatibility
+```
+
+---
+
+# 13. Kerberos Authentication
+
+Kerberos uses **tickets** as proof that a user has authenticated.
+
+Think of a ticket like a **pass**:
+
+```text
+Authenticate once
+      ↓
+Receive ticket
+      ↓
+Use ticket to access authorised services
+```
+
+---
+
+## Important Kerberos Terms
+
+### KDC — Key Distribution Center
+
+The KDC is responsible for handling Kerberos authentication and issuing tickets.
+
+It has two major logical components:
+
+* **Authentication Service (AS)**
+* **Ticket Granting Service (TGS)**
+
+### TGT — Ticket Granting Ticket
+
+After authentication, the user receives a **TGT**.
+
+The TGT can then be used to request service-specific tickets.
+
+```text
+User
+ ↓
+Authentication
+ ↓
+TGT
+ ↓
+Request service ticket
+ ↓
+TGS
+ ↓
+Access specific service
+```
+
+### TGS — Ticket Granting Service Ticket
+
+A TGS ticket is used to access a **specific service**.
+
+Example:
+
+```text
+User wants to access
+        ↓
+File Server
+        ↓
+Requests appropriate service ticket
+        ↓
+TGS
+        ↓
+Access service
+```
+
+---
+
+# 14. SPN — Service Principal Name
+
+An **SPN (Service Principal Name)** identifies a particular service instance running on a specific computer/account.
+
+It helps Kerberos determine which service the user wants to access.
+
+Example concept:
+
+```text
+User
+ ↓
+"I want to access this service"
+ ↓
+SPN identifies the service
+ ↓
+KDC provides appropriate service ticket
+```
+
+---
+
+# 15. Kerberos — Easy Full Flow
+
+```text
+1. User authenticates
+          ↓
+2. KDC provides TGT
+          ↓
+3. User wants a network service
+          ↓
+4. User uses TGT to request a TGS
+          ↓
+5. KDC provides service ticket
+          ↓
+6. User presents ticket to the service
+          ↓
+7. Service verifies the ticket
+          ↓
+8. Access is granted if authorised
+```
+
+### Important Terms
+
+```text
+KDC  → Handles Kerberos tickets
+TGT  → Ticket used to request service tickets
+TGS  → Service-specific ticket
+SPN  → Identifies the target service
+```
+
+---
+
+# 16. NetNTLM Authentication
+
+NetNTLM uses a **challenge-response** mechanism.
+
+### Basic Flow
+
+```text
+Client
+  ↓
+Authentication request
+  ↓
+Server sends random challenge
+  ↓
+Client creates response using password-derived information
+  ↓
+Server sends challenge + response to DC
+  ↓
+DC verifies response
+  ↓
+Authentication result
+  ↓
+Server
+  ↓
+Client
+```
+
+### Important Point
+
+The user's actual password is **not sent across the network** as part of this challenge-response exchange.
+
+---
+
+# 17. Kerberos vs NetNTLM
+
+| Feature                          | Kerberos     | NetNTLM                 |
+| -------------------------------- | ------------ | ----------------------- |
+| Type                             | Ticket-based | Challenge-response      |
+| Modern AD use                    | Default      | Legacy/compatibility    |
+| Uses tickets                     | Yes          | No                      |
+| Common in modern Windows domains | Yes          | Mainly legacy scenarios |
+
+### Easy Memory Trick
+
+```text
+Kerberos → Tickets 🎫
+NetNTLM  → Challenge → Response
+```
+
+---
+
+# 18. Trees and Forests
+
+Active Directory can contain multiple domains.
+
+## Tree
+
+A **tree** is a collection of related domains that share a contiguous DNS namespace.
+
+Example:
+
+```text
+example.com
+   │
+   ├── uk.example.com
+   └── asia.example.com
+```
+
+These domains form an AD **tree**.
+
+---
+
+## Forest
+
+A **forest** is a collection of one or more AD trees.
+
+Different trees can have different DNS namespaces.
+
+Example:
+
+```text
+Forest
+│
+├── Tree 1
+│   ├── example.com
+│   └── uk.example.com
+│
+└── Tree 2
+    ├── example.net
+    └── asia.example.net
+```
+
+### Easy Memory
+
+```text
+Domain
+  ↓
+Tree = multiple related domains
+  ↓
+Forest = one or more trees
+```
+
+> A forest can contain a single tree, so a forest does not necessarily mean "many companies."
+
+---
+
+# 19. Trust Relationships
+
+When multiple domains or forests need to work together, **trust relationships** can allow users from one domain to access resources in another domain.
+
+Example:
+
+```text
+THM UK Domain
+      ↓
+   Trust
+      ↓
+THM Asia Domain
+```
+
+A user from one domain may then be able to access resources in another domain, provided the appropriate permissions are also granted.
+
+### Two-Way Trust
+
+A two-way trust allows both domains to trust each other for authentication/authorisation relationships.
+
+```text
+Domain A  ⇄  Domain B
+```
+
+This means users from each side can potentially be authorised to access resources on the other side, depending on permissions.
+
+---
+
+# 20. Important Revision Sheet
+
+```text
+AD
+↓
+Central management of Windows domain objects
+
+AD DS
+↓
+Core Active Directory service
+
+DC
+↓
+Domain Controller
+↓
+Runs AD services and manages the domain
+
+OU
+↓
+Organise objects + apply policies
+
+Security Group
+↓
+Permissions + resource access
+
+GPO
+↓
+Centralised policies/configuration
+
+Delegation
+↓
+Give specific administrative permissions
+
+Kerberos
+↓
+Ticket-based authentication
+
+TGT
+↓
+Used to request service tickets
+
+TGS
+↓
+Ticket for a specific service
+
+SPN
+↓
+Identifies a service instance
+
+NetNTLM
+↓
+Challenge-response authentication
+
+Tree
+↓
+Related domains with contiguous namespace
+
+Forest
+↓
+One or more AD trees
+
+Trust
+↓
+Allows authentication/authorisation relationships between domains
+```
+
+# ⭐ Most Important Differences
+
+```text
+OU vs Group
+OU      → Organisation + Policies
+Group   → Permissions + Access
+
+Kerberos vs NetNTLM
+Kerberos → Tickets
+NetNTLM  → Challenge + Response
+
+Tree vs Forest
+Tree     → Multiple related domains
+Forest   → One or more trees
+
+TGT vs TGS
+TGT      → Request service tickets
+TGS      → Access a specific service
+```
