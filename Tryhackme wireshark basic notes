@@ -1,0 +1,1093 @@
+# Wireshark — Network Traffic Analysis
+
+## 1. What is Wireshark?
+
+**Wireshark** is a network protocol analyzer used to capture, inspect, and analyze network traffic.
+
+When packets travel across a network, Wireshark can capture and display them so that analysts can understand the communication.
+
+Wireshark can help identify:
+
+* Source IP address
+* Destination IP address
+* Protocol being used
+* Ports involved in communication
+* Packet contents
+* Unusual or suspicious traffic
+
+> **Important:** Wireshark is not an IDS. It does not automatically determine whether traffic is malicious. It is primarily a tool for packet capture and analysis.
+
+---
+
+# 2. Wireshark GUI
+
+The Wireshark interface contains several important sections.
+
+| Component              | Purpose                                             |
+| ---------------------- | --------------------------------------------------- |
+| **Toolbar**            | Provides tools and common actions                   |
+| **Display Filter Bar** | Filters captured packets                            |
+| **Recent Files**       | Shows recently opened capture files                 |
+| **Capture Interfaces** | Selects the network interface for capturing traffic |
+| **Status Bar**         | Displays packet counts and capture status           |
+
+---
+
+## Network Interface
+
+A **network interface** is the operating system's representation of a network connection.
+
+Examples:
+
+```text
+eth0
+ens33
+lo
+```
+
+A physical or virtual network connection such as Ethernet or Wi-Fi is represented by an interface.
+
+---
+
+# 3. PCAP and PCAPNG
+
+A **PCAP** or **PCAPNG** file stores captured network packets.
+
+These files can be opened in Wireshark later for analysis without needing to capture the traffic again.
+
+```text
+Network Traffic
+      ↓
+Packet Capture
+      ↓
+PCAP / PCAPNG
+      ↓
+Wireshark Analysis
+```
+
+---
+
+# 4. Packet Details Panel
+
+The **Packet Details** panel breaks down the selected packet into its protocol layers and fields.
+
+Example:
+
+```text
+Frame
+Ethernet
+Internet Protocol
+Transmission Control Protocol
+HTTP
+```
+
+This allows an analyst to inspect how the packet is structured.
+
+---
+
+# 5. Packet Colouring
+
+Wireshark can use colours to make different types of traffic easier to identify visually.
+
+Colouring is mainly useful for quickly recognizing traffic patterns when analyzing a large capture.
+
+### Colouring Rules
+
+* **Permanent colouring rules** — saved for future use.
+* **Temporary colouring rules** — apply only to the current session.
+
+> Packet colour does **not** automatically mean that the packet is malicious or dangerous. Colouring is primarily a visual analysis aid.
+
+---
+
+# 6. Traffic Capture
+
+Wireshark can capture live network traffic from a selected network interface.
+
+Common capture controls include:
+
+```text
+Start Capture  → Start capturing packets
+Stop Capture   → Stop the current capture
+Restart        → Restart packet capture
+```
+
+The capture interface must be selected before starting a capture.
+
+---
+
+# 7. Capture File Properties
+
+Capture file information can be viewed through:
+
+```text
+Statistics → Capture File Properties
+```
+
+Depending on the capture file, this can provide information such as:
+
+* Capture file comments
+* File hash
+* Capture start/end information
+* Interfaces
+* Packet statistics
+
+This can be useful when investigating or documenting a PCAP.
+
+---
+
+# 8. Packet Dissection
+
+**Packet dissection** means breaking a packet down into its different protocols and fields so that its contents can be analyzed.
+
+Think of a packet like a package:
+
+```text
+Packet
+ ├── MAC information
+ ├── IP information
+ ├── TCP/UDP information
+ ├── Application protocol
+ └── Application data
+```
+
+Wireshark automatically decodes the packet and presents this information in a readable format.
+
+---
+
+## Viewing Packet Details
+
+The basic workflow is:
+
+```text
+Packet List
+     ↓
+Select Packet
+     ↓
+Packet Details
+```
+
+Double-clicking a packet can open its detailed information in a separate window.
+
+Selecting a field in the **Packet Details** pane can also highlight the corresponding raw bytes in the **Packet Bytes** pane.
+
+---
+
+# 9. Packet Dissection Sections
+
+A packet can be viewed through several important sections.
+
+| Section                  | Main Information                              |
+| ------------------------ | --------------------------------------------- |
+| **Frame**                | Basic packet/frame information                |
+| **Ethernet / MAC**       | MAC addresses                                 |
+| **IP**                   | Source and destination IP addresses           |
+| **TCP/UDP**              | Transport protocol and ports                  |
+| **Reassembly / Errors**  | Segmentation and protocol-related information |
+| **Application Protocol** | HTTP, FTP, SMB, etc.                          |
+| **Application Data**     | Data carried by the application protocol      |
+
+---
+
+## 9.1 Frame Information
+
+The Frame section contains basic information about the captured packet.
+
+Example:
+
+```text
+Frame 27
+Packet Length: ...
+Captured Length: ...
+```
+
+It can provide information about the packet's capture and frame characteristics.
+
+---
+
+## 9.2 MAC Addresses
+
+The Ethernet section contains MAC addresses.
+
+```text
+Source MAC      → AA:BB:CC:...
+Destination MAC → XX:YY:ZZ:...
+```
+
+MAC addresses identify network interfaces at the Data Link layer.
+
+**OSI Layer 2 — Data Link**
+
+---
+
+## 9.3 IP Addresses
+
+The Internet Protocol section contains IP addressing information.
+
+```text
+Source IP      → 192.168.1.10
+Destination IP → 192.168.1.20
+```
+
+This tells us where the packet originated and where it is going at the IP layer.
+
+**OSI Layer 3 — Network**
+
+---
+
+## 9.4 TCP / UDP
+
+The Transport layer contains information such as:
+
+* Transport protocol
+* Source port
+* Destination port
+
+Example:
+
+```text
+Source Port      → 49152
+Destination Port → 80
+```
+
+Common transport protocols:
+
+```text
+TCP
+UDP
+```
+
+**OSI Layer 4 — Transport**
+
+---
+
+## 9.5 Reassembly and Protocol Errors
+
+TCP data may be divided across multiple segments.
+
+Example:
+
+```text
+TCP Segment 1 → Part of data
+TCP Segment 2 → Part of data
+TCP Segment 3 → Remaining data
+```
+
+Wireshark can reassemble these segments so that higher-level protocol information can be interpreted.
+
+Protocol errors or reassembly information do not automatically mean that an attack is occurring.
+
+---
+
+## 9.6 Application Protocol
+
+This section identifies the application-level protocol involved in the communication.
+
+Examples:
+
+```text
+HTTP
+FTP
+SMB
+```
+
+For example, an HTTP request may contain:
+
+```text
+GET /index.html
+```
+
+This is where the purpose of the communication becomes easier to understand.
+
+---
+
+## 9.7 Application Data
+
+Application data contains information carried by the application protocol.
+
+For example:
+
+```text
+HTTP
+ ↓
+Application Data
+ ↓
+Transmitted content
+```
+
+### Difference
+
+```text
+Application Protocol
+→ Which application protocol is being used?
+
+Application Data
+→ What data is being transmitted?
+```
+
+---
+
+# 10. Example of Packet Dissection
+
+Suppose an HTTP request is captured:
+
+```text
+Frame
+ ↓
+Ethernet / MAC
+ ↓
+IP
+ ↓
+TCP
+ ↓
+HTTP
+ ↓
+Application Data
+```
+
+In simple terms:
+
+```text
+Which packet?
+      ↓
+Which network device?
+      ↓
+Which IP addresses?
+      ↓
+Which transport protocol and ports?
+      ↓
+Which application protocol?
+      ↓
+What data was transmitted?
+```
+
+That process is essentially **packet dissection**.
+
+---
+
+# 11. Packet Numbers
+
+Wireshark assigns a number to each captured packet.
+
+```text
+1
+2
+3
+4
+...
+1000
+```
+
+Packet numbers make it easy to reference a specific packet during an investigation.
+
+Example:
+
+```text
+Suspicious activity → Packet #427
+```
+
+An analyst can then directly locate packet 427.
+
+---
+
+# 12. Go to Packet
+
+If you know the packet number:
+
+```text
+Go → Go to Packet
+```
+
+Example:
+
+```text
+Go to Packet: 427
+```
+
+Wireshark will move directly to packet 427.
+
+This is especially useful when analyzing captures containing thousands of packets.
+
+---
+
+# 13. Find Packet
+
+**Find Packet** searches packet contents rather than simply searching by packet number.
+
+Menu:
+
+```text
+Edit → Find Packet
+```
+
+Wireshark provides several search methods:
+
+1. Display Filter
+2. Hexadecimal
+3. String
+4. Regular Expression (Regex)
+
+For beginners, **String** is usually the easiest.
+
+Example:
+
+```text
+password
+```
+
+Wireshark can search for that string in the selected packet pane.
+
+### Important
+
+Wireshark has three main panes:
+
+```text
+Packet List
+Packet Details
+Packet Bytes
+```
+
+The selected search pane matters.
+
+If the information exists in **Packet Details** but the search is performed against **Packet List**, the expected result may not be found.
+
+---
+
+# 14. Mark Packets
+
+Important packets can be marked for later reference.
+
+Example:
+
+```text
+Packet #500
+      ↓
+Mark
+```
+
+Marked packets are visually highlighted.
+
+### Purpose
+
+Marking is useful when an analyst wants to quickly identify important packets during an investigation.
+
+> Packet marking is temporary and is lost when the capture is closed.
+
+---
+
+# 15. Packet Comments
+
+Packet comments allow an analyst to attach a note to a packet.
+
+Example:
+
+```text
+Packet #500
+
+Comment:
+Possible suspicious HTTP request
+```
+
+This helps explain why a packet was considered important.
+
+### Mark vs Comment
+
+| Feature                   | Mark                 | Comment                       |
+| ------------------------- | -------------------- | ----------------------------- |
+| Identify important packet | Yes                  | Yes                           |
+| Add written explanation   | No                   | Yes                           |
+| Retained in capture file  | No                   | Yes, when saved appropriately |
+| Main purpose              | Quick identification | Investigation documentation   |
+
+---
+
+# 16. Export Packets
+
+Large PCAP files can contain thousands of packets.
+
+If only a small number of packets are relevant, those packets can be exported into a separate capture file.
+
+Example:
+
+```text
+Original PCAP
+      ↓
+Identify relevant packets
+      ↓
+Export
+      ↓
+Smaller PCAP
+      ↓
+Focused investigation
+```
+
+This makes it easier to share or analyze only the relevant traffic.
+
+---
+
+# 17. Export Objects / Files
+
+Wireshark can extract transferred objects from supported protocols.
+
+Example:
+
+```text
+Network Traffic
+      ↓
+HTTP
+      ↓
+Transferred File
+      ↓
+Wireshark
+      ↓
+Export Object
+      ↓
+Extracted File
+```
+
+This can be useful during security investigations to determine what files were transferred through network traffic.
+
+Examples of protocols for which Wireshark provides object-export functionality include:
+
+* HTTP
+* SMB
+* TFTP
+* IMF
+* DICOM
+
+---
+
+# 18. Time Display Format
+
+Wireshark can display packet timestamps in different formats.
+
+One common format is:
+
+```text
+Seconds Since Beginning of Capture
+```
+
+Example:
+
+```text
+0.000000
+1.254321
+5.673829
+```
+
+These values represent time relative to the beginning of the capture.
+
+The format can be changed through:
+
+```text
+View → Time Display Format
+```
+
+UTC and other timestamp formats can also be selected.
+
+### Why is this useful?
+
+A timeline can help reconstruct events:
+
+```text
+10:30 → Normal traffic
+10:32 → Suspicious connection
+10:33 → File transfer
+10:34 → Connection closed
+```
+
+---
+
+# 19. Expert Information
+
+**Expert Information** provides protocol-related warnings, notes, and other information identified by Wireshark.
+
+Access it through:
+
+```text
+Analyze → Expert Information
+```
+
+> Expert Information is not proof that an attack has occurred. It provides indicators and protocol-analysis information that should be investigated further.
+
+False positives and false negatives are possible.
+
+---
+
+## Expert Information Severity
+
+| Severity  | Meaning                          |
+| --------- | -------------------------------- |
+| **Chat**  | Normal workflow information      |
+| **Note**  | Notable event                    |
+| **Warn**  | Warning or possible problem      |
+| **Error** | Serious protocol-related problem |
+
+Example:
+
+```text
+Chat  → Normal information
+Note  → Something notable
+Warn  → Investigate further
+Error → Protocol problem
+```
+
+---
+
+# 20. Expert Information Groups
+
+Some common groups include:
+
+### Checksum
+
+Indicates checksum-related information or errors.
+
+### Malformed
+
+Indicates that a packet may not be properly formed or contains a protocol structure problem.
+
+### Deprecated
+
+Indicates use of an old or deprecated protocol/feature.
+
+### Comment
+
+Provides comment-related information.
+
+---
+
+# 21. Packet Filtering
+
+Imagine a PCAP contains:
+
+```text
+50,000 packets
+```
+
+but you only want to investigate HTTP traffic.
+
+Without a filter:
+
+```text
+TCP
+UDP
+ARP
+DNS
+HTTP
+ICMP
+...
+50,000 packets
+```
+
+With:
+
+```text
+http
+```
+
+Wireshark displays packets matching the HTTP display filter.
+
+This is **packet filtering**.
+
+---
+
+# 22. Capture Filter vs Display Filter
+
+This is one of the most important Wireshark concepts.
+
+## Capture Filter
+
+A capture filter determines **which packets should be captured**.
+
+```text
+Network
+   ↓
+Capture Filter
+   ↓
+Wireshark
+```
+
+Unwanted packets can be excluded before they are captured.
+
+---
+
+## Display Filter
+
+A display filter is applied **after packets have already been captured**.
+
+```text
+Network
+   ↓
+Wireshark
+   ↓
+Display Filter
+   ↓
+Relevant Packets
+```
+
+### Easy Difference
+
+```text
+Capture Filter
+→ What should I capture?
+
+Display Filter
+→ What should I display?
+```
+
+---
+
+# 23. Apply as Filter
+
+Wireshark allows you to create a filter directly from packet fields.
+
+> A useful beginner rule is: if a field can be selected in the packet details, you can often use it to construct a filter.
+
+Example:
+
+```text
+Source IP: 192.168.1.5
+```
+
+Right-click the field:
+
+```text
+Apply as Filter
+```
+
+Wireshark automatically creates and applies an appropriate display filter.
+
+---
+
+# 24. Conversation Filter
+
+A **Conversation Filter** focuses on traffic belonging to a particular network conversation.
+
+Example:
+
+```text
+192.168.1.5 → 10.0.0.20
+TCP
+Port 443
+```
+
+It can help isolate traffic associated with that communication.
+
+### Difference
+
+```text
+Apply as Filter
+→ Filter based on a selected field/value
+
+Conversation Filter
+→ Focus on the communication between endpoints
+```
+
+---
+
+# 25. Colourise Conversation
+
+**Colourise Conversation** highlights related packets without hiding unrelated packets.
+
+### Difference
+
+| Feature                    | Hides unrelated packets? | Purpose                   |
+| -------------------------- | ------------------------ | ------------------------- |
+| **Apply as Filter**        | Yes                      | Filter specific traffic   |
+| **Conversation Filter**    | Yes                      | Focus on a conversation   |
+| **Colourise Conversation** | No                       | Highlight related traffic |
+
+Colourisation can be reset through the relevant conversation-colouring controls.
+
+---
+
+# 26. Prepare as Filter
+
+**Prepare as Filter** creates a filter expression but does not immediately apply it.
+
+Example:
+
+```text
+ip.addr == 192.168.1.5
+```
+
+The expression appears in the Display Filter Bar.
+
+You can then modify it or press Enter to apply it.
+
+This is useful when you want to build more complex filters.
+
+---
+
+# 27. Apply as Column
+
+Packet Details can contain useful fields that are not displayed as columns in the Packet List.
+
+**Apply as Column** adds a selected field as a column.
+
+Default Packet List columns may include:
+
+```text
+No. | Time | Source | Destination | Protocol | Info
+```
+
+After applying a useful field as a column, you can compare its value across many packets more easily.
+
+---
+
+# 28. Follow Stream
+
+**Follow Stream** reconstructs related packets into a conversation or stream.
+
+Normally, communication may appear as individual packets:
+
+```text
+Packet 1 → Client → Server
+Packet 2 → Server → Client
+Packet 3 → Client → Server
+Packet 4 → Server → Client
+```
+
+Follow Stream presents the communication together so that the analyst can understand the conversation more easily.
+
+Examples include:
+
+```text
+Follow TCP Stream
+Follow UDP Stream
+Follow HTTP Stream
+```
+
+### Example
+
+```text
+Client:
+GET /login
+
+Server:
+HTTP/1.1 200 OK
+```
+
+This is often much easier to understand than viewing each packet individually.
+
+### Security Consideration
+
+If the protocol is unencrypted, Follow Stream may expose information such as:
+
+* Usernames
+* Passwords
+* HTTP requests
+* Other transmitted data
+
+Encrypted protocols generally do not expose the original plaintext contents unless the traffic can be decrypted.
+
+---
+
+# 29. Follow Stream and Display Filters
+
+When following a stream, Wireshark can apply a display filter that isolates that particular stream.
+
+Therefore, the number of displayed packets may decrease.
+
+To remove the display filter, clear the **Display Filter Bar**.
+
+---
+
+# 30. Important Display Filters
+
+## Protocol Filters
+
+### HTTP
+
+```text
+http
+```
+
+Shows traffic identified as HTTP.
+
+### ARP
+
+```text
+arp
+```
+
+Shows ARP traffic.
+
+### DNS
+
+```text
+dns
+```
+
+Shows DNS traffic.
+
+### FTP
+
+```text
+ftp
+```
+
+Shows FTP traffic.
+
+### SMTP
+
+```text
+smtp
+```
+
+Shows SMTP traffic.
+
+---
+
+# 31. Port Filters
+
+### TCP Port
+
+```text
+tcp.port == 80
+```
+
+Shows TCP traffic involving port 80.
+
+### UDP Port
+
+```text
+udp.port == 53
+```
+
+Shows UDP traffic involving port 53.
+
+---
+
+# 32. IP Address Filters
+
+To display traffic where an IP address is either the source or destination:
+
+```text
+ip.addr == 192.168.1.2
+```
+
+This matches traffic involving `192.168.1.2`.
+
+### Important
+
+```text
+ip.addr
+```
+
+matches the address on either side of the conversation.
+
+---
+
+# 33. Wireshark Quick Reference
+
+## Common Display Filters
+
+| Filter                   | Purpose                            |
+| ------------------------ | ---------------------------------- |
+| `http`                   | HTTP traffic                       |
+| `arp`                    | ARP traffic                        |
+| `dns`                    | DNS traffic                        |
+| `ftp`                    | FTP traffic                        |
+| `smtp`                   | SMTP traffic                       |
+| `tcp.port == 80`         | TCP traffic involving port 80      |
+| `udp.port == 53`         | UDP traffic involving port 53      |
+| `ip.addr == 192.168.1.2` | Traffic involving the specified IP |
+
+---
+
+## Important Wireshark Features
+
+| Feature                    | Purpose                                            |
+| -------------------------- | -------------------------------------------------- |
+| **Apply as Filter**        | Immediately create and apply a filter from a field |
+| **Conversation Filter**    | Focus on a particular communication                |
+| **Colourise Conversation** | Highlight related packets without hiding others    |
+| **Prepare as Filter**      | Prepare a filter without immediately applying it   |
+| **Apply as Column**        | Add a field to the Packet List as a column         |
+| **Follow Stream**          | Reconstruct a network conversation                 |
+| **Go to Packet**           | Jump directly to a packet number                   |
+| **Find Packet**            | Search packet contents                             |
+| **Mark Packet**            | Temporarily identify an important packet           |
+| **Packet Comment**         | Add investigation notes to a packet                |
+| **Export Packets**         | Create a smaller capture from selected packets     |
+| **Export Objects**         | Extract supported transferred files/objects        |
+| **Expert Information**     | View protocol-related warnings and information     |
+
+---
+
+# 34. Final Revision Sheet
+
+```text
+Wireshark
+→ Capture + inspect + analyze network traffic
+
+PCAP / PCAPNG
+→ Stores captured packets
+
+Packet Dissection
+→ Break packet into protocols and fields
+
+Packet List
+→ List of captured packets
+
+Packet Details
+→ Protocols and fields inside selected packet
+
+Packet Bytes
+→ Raw packet data
+
+Capture Filter
+→ Decides what gets captured
+
+Display Filter
+→ Decides what captured traffic is displayed
+
+Follow Stream
+→ Reconstruct a communication
+
+Expert Information
+→ Protocol warnings/notes, not automatic proof of attack
+```
+
+## Most Important Filters
+
+```text
+http
+arp
+dns
+ftp
+smtp
+
+tcp.port == 80
+udp.port == 53
+
+ip.addr == 192.168.1.2
+```
+
+## Most Important Concepts
+
+```text
+Capture Filter ≠ Display Filter
+
+Capture Filter
+→ Filter before/during capture
+
+Display Filter
+→ Filter after capture
+
+Apply as Filter
+→ Apply immediately
+
+Prepare as Filter
+→ Prepare, then apply
+
+Conversation Filter
+→ Focus on communication
+
+Colourise Conversation
+→ Highlight communication
+
+Follow Stream
+→ Reconstruct communication
+```
