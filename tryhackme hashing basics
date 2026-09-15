@@ -1,0 +1,1103 @@
+# Hashing Basics
+
+## 1. What is Hashing?
+
+A **hash** is a fixed-size string/digital fingerprint produced when an input is processed through a **hash function**.
+
+```text
+Input → Hash Function → Hash
+```
+
+The input can be small or very large, but the hash output has a fixed size depending on the algorithm.
+
+### Important Properties
+
+* Same input → same hash
+* A very small change in the input → significantly different hash
+* Hashing is normally **one-way**
+* A hash is not decrypted like encrypted data
+
+### Hashing vs Encryption
+
+| Hashing                                                                     | Encryption                                          |
+| --------------------------------------------------------------------------- | --------------------------------------------------- |
+| One-way                                                                     | Reversible                                          |
+| Usually does not use a secret key                                           | Uses a key                                          |
+| Original input is computationally impractical to recover from a secure hash | Original data can be recovered with the correct key |
+| Integrity / password storage                                                | Confidentiality                                     |
+
+---
+
+# 2. Hexadecimal and Hash Size
+
+1 hexadecimal character = **4 bits**
+
+Examples:
+
+```text
+T = 54 (hex) = 01010100 (binary)
+U = 55 (hex) = 01010101 (binary)
+```
+
+Even a small change in the input can produce a completely different hash.
+
+### Common Hash Sizes
+
+| Algorithm | Bits | Hex Characters |
+| --------- | ---: | -------------: |
+| MD5       |  128 |             32 |
+| SHA-1     |  160 |             40 |
+| SHA-256   |  256 |             64 |
+| SHA-512   |  512 |            128 |
+
+Formula:
+
+```text
+Hex characters = Bits ÷ 4
+```
+
+Example:
+
+```text
+256 ÷ 4 = 64
+```
+
+---
+
+# 3. Calculating a Hash
+
+Linux commands:
+
+```bash
+md5sum file.txt
+sha1sum file.txt
+sha256sum file.txt
+```
+
+Multiple `.txt` files:
+
+```bash
+md5sum *.txt
+```
+
+`*.txt` = all `.txt` files in the current directory.
+
+---
+
+# 4. Meaning of Arbitrary
+
+**Arbitrary** = no fixed restriction; the input can generally be of different sizes.
+
+A hash function can process:
+
+```text
+Small file
+Large file
+Short text
+Long text
+```
+
+The exact input limits depend on the algorithm.
+
+---
+
+# 5. Collision
+
+A **collision** occurs when two different inputs produce the same hash.
+
+```text
+Input A → Hash X
+Input B → Hash X
+```
+
+Hash functions have a finite number of possible outputs, while the number of possible inputs is much larger.
+
+### Pigeonhole Example
+
+Suppose:
+
+```text
+16 possible hash outputs
+21 inputs
+```
+
+If 21 pigeons are placed into 16 holes, at least one hole must contain multiple pigeons.
+
+Similarly:
+
+```text
+Inputs → Hash Outputs
+```
+
+Because there are more possible inputs than possible hash outputs, collisions are theoretically unavoidable.
+
+### SHA-256
+
+SHA-256 has:
+
+```text
+2^256
+```
+
+possible outputs.
+
+Collisions are theoretically possible, but finding a collision for SHA-256 is computationally infeasible with current practical methods.
+
+### Important
+
+MD5 and SHA-1 are considered insecure for security-sensitive collision-resistance purposes because practical collision attacks exist.
+
+---
+
+# 6. Password Storage
+
+An authentication system normally does not need to store the original password.
+
+When a user logs in:
+
+```text
+User enters password
+        ↓
+Password is hashed
+        ↓
+Compare with stored password hash
+```
+
+If they match:
+
+```text
+Stored hash == New hash
+```
+
+→ Password is correct.
+
+In real password storage, a **salt** and a password-specific hashing algorithm should also be used.
+
+---
+
+# 7. Insecure Password Storage Methods
+
+### Plaintext
+
+Database contains:
+
+```text
+username: user
+password: mypassword
+```
+
+Problem: If the database is leaked, the password is directly exposed.
+
+If the password was reused on other accounts, those accounts could also be at risk.
+
+### Weak/Deprecated Encryption
+
+Encrypted passwords can be decrypted if the required key is available.
+
+```text
+Encrypted password
+        ↓
+       Key
+        ↓
+Original password
+```
+
+### Insecure Hashing
+
+Example:
+
+**LinkedIn historically used unsalted SHA-1**, which was not adequate for password storage.
+
+---
+
+# 8. RockYou Wordlist
+
+Kali Linux commonly includes:
+
+```text
+/usr/share/wordlists/rockyou.txt
+```
+
+It is a large wordlist containing password candidates.
+
+Count the number of lines:
+
+```bash
+wc -l rockyou.txt
+```
+
+* `wc` = word count utility
+* `-l` = count lines
+
+Show the first lines:
+
+```bash
+head rockyou.txt
+```
+
+Show a specific line:
+
+```bash
+sed -n '100p' rockyou.txt
+```
+
+Show lines 100–110:
+
+```bash
+sed -n '100,110p' rockyou.txt
+```
+
+Show line numbers:
+
+```bash
+nl -ba rockyou.txt | sed -n '100,110p'
+```
+
+---
+
+# 9. Salt
+
+A **salt** is a random value added to a password before hashing.
+
+```text
+Password + Salt
+      ↓
+    Hash
+```
+
+Different salts for the same password:
+
+```text
+password + saltA → hashA
+password + saltB → hashB
+```
+
+Therefore, the same password can produce different hashes.
+
+### Important
+
+A salt should:
+
+* Be unique
+* Be randomly generated
+* Not need to be secret
+* Be stored with the password hash
+
+---
+
+# 10. Secure Password Hashing Algorithms
+
+Common password hashing algorithms include:
+
+* Argon2
+* Scrypt
+* Bcrypt
+* PBKDF2
+
+These are designed specifically to make password guessing more expensive.
+
+---
+
+# 11. Linux Password Hashes
+
+Modern Linux systems normally store password hashes in:
+
+```text
+/etc/shadow
+```
+
+Normally, this file is readable only by privileged/root users.
+
+Historically, password information was associated with:
+
+```text
+/etc/passwd
+```
+
+Modern systems store the sensitive password hashes in `/etc/shadow`.
+
+---
+
+# 12. `/etc/shadow` Format
+
+A `/etc/shadow` entry contains colon-separated fields:
+
+```text
+username:password-field:other-fields...
+```
+
+Example:
+
+```text
+user:$y$j9T$76UzfgEM5PnymhQ7TlJey1$/OOSg64dhfF.TigVPdzqiFang6uZA4QA1pzzegKdVm4:19965:0:99999:7:::
+```
+
+### Username
+
+```text
+user
+```
+
+This is the username.
+
+Password field:
+
+```text
+$y$j9T$76UzfgEM5PnymhQ7TlJey1$/OOSg64dhfF.TigVPdzqiFang6uZA4QA1pzzegKdVm4
+```
+
+A common simplified structure is:
+
+```text
+$prefix$options$salt$hash
+```
+
+---
+
+# 13. Linux Hash Prefixes — MUST REMEMBER
+
+| Prefix | Algorithm / Format                               |
+| ------ | ------------------------------------------------ |
+| `$y$`  | yescrypt                                         |
+| `$gy$` | gost-yescrypt                                    |
+| `$7$`  | scrypt in the Unix-style format discussed by THM |
+| `$2a$` | bcrypt                                           |
+| `$2b$` | bcrypt                                           |
+| `$2y$` | bcrypt                                           |
+| `$2x$` | bcrypt                                           |
+| `$6$`  | sha512crypt                                      |
+| `$5$`  | sha256crypt                                      |
+| `$1$`  | md5crypt                                         |
+
+### Example
+
+```text
+$y$j9T$76Uz...
+```
+
+Basic breakdown:
+
+```text
+$y$       → yescrypt
+j9T       → parameters/options
+76Uz...   → salt
+/OOS...   → hash
+```
+
+### Very Important Distinction
+
+```text
+$6$ → sha512crypt
+```
+
+This is **not the same as plain SHA-512**.
+
+Similarly:
+
+```text
+$5$ → sha256crypt
+```
+
+This is **not the same as plain SHA-256**.
+
+---
+
+# 14. Windows Password Hashes
+
+Windows password hashes are commonly associated with **NTLM**.
+
+NTLM uses the MD4 algorithm.
+
+NTLM hashes can look similar to other hexadecimal hashes, so **context is important**.
+
+Windows local password hashes are associated with the:
+
+```text
+SAM
+```
+
+**SAM = Security Accounts Manager**
+
+### Important
+
+Do not identify a hash only by its length.
+
+For example:
+
+```text
+32 hexadecimal characters
+```
+
+could potentially represent different hash types.
+
+Use:
+
+```text
+Context
++
+Format
++
+Length
++
+Hash identification tools
+```
+
+For example:
+
+```text
+Windows/SAM → NTLM likely
+Web application database → MD5 may be possible
+```
+
+---
+
+# 15. Identifying a Hash
+
+Tool:
+
+```bash
+hashid '<HASH>'
+```
+
+Example:
+
+```bash
+hashid '5f4dcc3b5aa765d61d8327deb882cf99'
+```
+
+With a hash file:
+
+```bash
+hashid -m hash.txt
+```
+
+`-m` can show/suggest the corresponding Hashcat mode.
+
+### Important
+
+`hashid` is **not 100% reliable**.
+
+For identification:
+
+```text
+Prefix
+   ↓
+Length / Encoding
+   ↓
+Context
+   ↓
+Hash identification tool
+   ↓
+Verify
+```
+
+---
+
+# 16. Hash Cracking Concept
+
+A hash is **not decrypted**.
+
+Instead, candidate passwords are tested:
+
+```text
+Candidate password
+       ↓
+     Hash
+       ↓
+Compare with target hash
+```
+
+Example:
+
+```text
+123456   → hash → ❌
+password → hash → ❌
+qwerty   → hash → ❌
+correct candidate → hash → ✅
+```
+
+When a hash matches the target hash, the candidate password has been identified.
+
+If a salt is used, the salt is also included in the hashing process.
+
+---
+
+# 17. Rainbow Tables
+
+Precomputed hash tables can be useful against **unsalted hashes**.
+
+With a unique salt:
+
+```text
+password + unique salt → hash
+```
+
+the same password can produce different hashes.
+
+Therefore, precomputed rainbow tables become much less effective.
+
+---
+
+# 18. Hashcat
+
+Hashcat is a commonly used tool for testing password hashes against candidate passwords.
+
+Basic syntax:
+
+```bash
+hashcat -m <hash_type> -a <attack_mode> hashfile wordlist
+```
+
+### `-m`
+
+Specifies the hash type/mode.
+
+### `-a`
+
+Specifies the attack mode.
+
+### `hashfile`
+
+Contains the target hash.
+
+### `wordlist`
+
+Contains candidate passwords.
+
+---
+
+# 19. Hashcat `-a 0`
+
+```bash
+-a 0
+```
+
+= **Straight / Wordlist Attack**
+
+Concept:
+
+```text
+word1 → try
+word2 → try
+word3 → try
+...
+```
+
+---
+
+# 20. Important Hashcat Modes — MUST REMEMBER
+
+### Plain/Common Hashes
+
+| Hash    | Hashcat Mode |
+| ------- | -----------: |
+| MD5     |          `0` |
+| SHA-1   |        `100` |
+| NTLM    |       `1000` |
+| SHA-256 |       `1400` |
+| SHA-512 |       `1700` |
+
+### Crypt/Password-Storage Formats
+
+| Format      | Prefix                 | Hashcat Mode |
+| ----------- | ---------------------- | -----------: |
+| md5crypt    | `$1$`                  |        `500` |
+| sha256crypt | `$5$`                  |       `7400` |
+| sha512crypt | `$6$`                  |       `1800` |
+| bcrypt      | `$2a$`, `$2b$`, `$2y$` |       `3200` |
+
+### Do Not Confuse These
+
+```text
+SHA-256     → 1400
+sha256crypt → 7400
+```
+
+```text
+SHA-512     → 1700
+sha512crypt → 1800
+```
+
+Identify the prefix/format and context first, then choose the correct Hashcat mode.
+
+---
+
+# 21. Example: bcrypt
+
+Example hash:
+
+```text
+$2a$06$7yoU3Ng8dHTXphAg913cyO6Bjs3K5lBnwq5FJyA6d01pMSrddr1ZG
+```
+
+Breakdown:
+
+```text
+$2a$ → bcrypt
+06   → cost factor
+```
+
+Hashcat mode:
+
+```text
+3200
+```
+
+In an authorized lab/THM environment, a wordlist attack can be performed with:
+
+```bash
+hashcat -m 3200 -a 0 hash1.txt /usr/share/wordlists/rockyou.txt
+```
+
+If the output is:
+
+```text
+$2a$06$...:85208520
+```
+
+then:
+
+```text
+hash : password candidate
+```
+
+`85208520` is the matching candidate.
+
+---
+
+# 22. What is a Hash File?
+
+`hash.txt` is not a special file type.
+
+It is simply a normal text file containing the target hash.
+
+Example:
+
+```text
+$2a$06$7yoU3Ng8dHTXphAg913cyO6Bjs3K5lBnwq5FJyA6d01pMSrddr1ZG
+```
+
+Command:
+
+```bash
+hashcat -m 3200 -a 0 hash.txt /usr/share/wordlists/rockyou.txt
+```
+
+Meaning:
+
+```text
+hashcat
+   ↓
+-m 3200 → bcrypt
+-a 0 → wordlist attack
+hash.txt → target hash
+rockyou.txt → candidate passwords
+```
+
+---
+
+# 23. GPU Cracking
+
+Modern GPUs can have thousands of cores.
+
+Hashing involves mathematical calculations, so GPU parallelism can significantly accelerate password guessing for suitable algorithms.
+
+### Important Exception
+
+Some password hashing algorithms, such as **bcrypt**, are deliberately designed to make password cracking more expensive and reduce the advantage of GPUs.
+
+---
+
+# 24. VM vs Host
+
+A VM normally does not automatically get full direct access to the host's GPU.
+
+```text
+Host Computer
+ ├── CPU
+ ├── GPU
+ └── VM
+      └── Kali
+```
+
+GPU passthrough is possible, but it can be complicated.
+
+For Hashcat, if a suitable GPU is available, running directly on the host can provide better performance than running inside a VM.
+
+John the Ripper can use the CPU by default and generally works inside a VM.
+
+---
+
+# 25. John the Ripper
+
+**John the Ripper** is another commonly used tool for password hash testing/cracking.
+
+General concept:
+
+```text
+Hash
+ ↓
+John
+ ↓
+Candidate Passwords
+ ↓
+Hash Comparison
+```
+
+John can use the CPU by default.
+
+---
+
+# 26. File Integrity
+
+Hashing is also commonly used for:
+
+> **File integrity checking**
+
+Original file:
+
+```text
+File → SHA-256 → Hash A
+```
+
+Downloaded file:
+
+```text
+Downloaded File → SHA-256 → Hash B
+```
+
+Compare:
+
+```text
+Hash A == Hash B
+```
+
+→ Contents match.
+
+```text
+Hash A != Hash B
+```
+
+→ Files are not identical.
+
+### Example
+
+```bash
+sha256sum Fedora.iso
+```
+
+Compare the result with the official SHA-256 hash.
+
+---
+
+# 27. Integrity vs Authenticity
+
+A normal hash is mainly useful for checking:
+
+```text
+Integrity
+```
+
+A matching hash means:
+
+> The data you have produces the expected hash.
+
+However, a normal hash alone does not prove who generated the hash or that it came from a trusted source.
+
+For authenticity, mechanisms such as **HMAC** or **digital signatures** can be used.
+
+---
+
+# 28. Duplicate Files
+
+Hashing can also help identify duplicate files.
+
+```text
+File A → Hash ABC
+File B → Hash ABC
+```
+
+The same hash strongly indicates that the files have the same contents.
+
+Therefore, hashing can be useful for finding duplicate files.
+
+---
+
+# 29. HMAC
+
+**HMAC = Hash-based Message Authentication Code**
+
+HMAC uses:
+
+```text
+Cryptographic Hash Function + Secret Key
+```
+
+Main purposes:
+
+### Integrity
+
+Was the message modified?
+
+### Authenticity
+
+Did the sender have the correct secret key?
+
+---
+
+# 30. Normal Hash vs HMAC
+
+### Normal Hash
+
+```text
+Message
+   ↓
+Hash Function
+   ↓
+Hash
+```
+
+### HMAC
+
+```text
+Message + Secret Key
+          ↓
+         HMAC
+          ↓
+       HMAC Value
+```
+
+The **secret key** is the important difference.
+
+---
+
+# 31. HMAC Basic Process
+
+THM's simplified process:
+
+### Step 1
+
+The secret key is adjusted to the hash function's block size.
+
+```text
+Key → Padded Key
+```
+
+### Step 2
+
+The padded key is XORed with `ipad`.
+
+```text
+K XOR ipad
+```
+
+### Step 3
+
+The message is hashed with the inner result.
+
+```text
+H((K ⊕ ipad) || M)
+```
+
+### Step 4
+
+The inner hash is combined with the outer padded key and hashed again.
+
+```text
+H((K ⊕ opad) || inner_hash)
+```
+
+### Step 5
+
+The final result is the **HMAC**.
+
+---
+
+# 32. HMAC Formula
+
+```text
+HMAC(K,M) = H((K⊕opad) || H((K⊕ipad)||M))
+```
+
+Symbols:
+
+| Symbol | Meaning       |   |               |
+| ------ | ------------- | - | ------------- |
+| `K`    | Secret Key    |   |               |
+| `M`    | Message       |   |               |
+| `H`    | Hash function |   |               |
+| `⊕`    | XOR           |   |               |
+| `ipad` | Inner padding |   |               |
+| `opad` | Outer padding |   |               |
+| `      |               | ` | Concatenation |
+
+---
+
+# 33. XOR
+
+**XOR = Exclusive OR**
+
+Rule:
+
+```text
+Same      → 0
+Different → 1
+```
+
+Truth table:
+
+```text
+0 XOR 0 = 0
+0 XOR 1 = 1
+1 XOR 0 = 1
+1 XOR 1 = 0
+```
+
+Example:
+
+```text
+  1010
+XOR 1100
+--------
+  0110
+```
+
+HMAC uses:
+
+```text
+K ⊕ ipad
+```
+
+and:
+
+```text
+K ⊕ opad
+```
+
+---
+
+# FINAL REVISION — Most Important
+
+## Hashing
+
+```text
+Input → Hash
+```
+
+* One-way
+* Same input → same hash
+* Small input change → major hash change
+
+## Password Storage
+
+```text
+Password + Salt → Password Hash
+```
+
+Secure examples:
+
+```text
+Argon2
+Scrypt
+Bcrypt
+PBKDF2
+```
+
+## Linux Prefixes
+
+```text
+$y$    → yescrypt
+$7$    → scrypt (Unix-style format discussed by THM)
+$2a$   → bcrypt
+$2b$   → bcrypt
+$2y$   → bcrypt
+$6$    → sha512crypt
+$5$    → sha256crypt
+$1$    → md5crypt
+```
+
+## Hashcat Modes
+
+```text
+MD5          → 0
+SHA-1        → 100
+NTLM         → 1000
+SHA-256      → 1400
+SHA-512      → 1700
+md5crypt     → 500
+sha256crypt  → 7400
+sha512crypt  → 1800
+bcrypt       → 3200
+```
+
+## Hashcat Basic Syntax
+
+```bash
+hashcat -m <hash_type> -a 0 hash.txt rockyou.txt
+```
+
+## File Integrity
+
+```text
+File → SHA-256 → Hash
+```
+
+Compare it with the official hash.
+
+```text
+Same → Contents match
+Different → Contents differ
+```
+
+## HMAC
+
+```text
+Secret Key + Hash Function + Message
+                ↓
+               HMAC
+```
+
+Provides:
+
+```text
+Integrity + Authenticity
+```
+
+## XOR
+
+```text
+Same → 0
+Different → 1
+```
+
+---
+
+# Hashing Workflow
+
+```text
+             HASH FOUND
+                 ↓
+       ┌─────────────────┐
+       │ Identify Format │
+       └────────┬────────┘
+                ↓
+       Prefix / Length / Context
+                ↓
+       Verify with Hash Tool
+                ↓
+       Find Hashcat Mode
+                ↓
+       ┌────────────────────┐
+       │ Hashcat / John     │
+       └─────────┬──────────┘
+                 ↓
+          Candidate Inputs
+                 ↓
+          Hash + Compare
+                 ↓
+               MATCH
+```
+
+**Core idea:**
+
+> **Identify the hash → understand its exact format/mode → choose the appropriate tool and method.**
