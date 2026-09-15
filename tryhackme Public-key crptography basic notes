@@ -1,0 +1,763 @@
+# Public Key Cryptography — ORBIT Notes
+
+## 1. Authentication & Authenticity
+
+**Authentication** = verifying who someone is.
+
+**Authenticity** = verifying that a message/file genuinely came from the claimed sender.
+
+**Integrity** = verifying that data has not been changed or tampered with.
+
+**Confidentiality** = making sure unauthorized people cannot read the data.
+
+---
+
+# 2. Symmetric vs Asymmetric Encryption
+
+## Symmetric Encryption
+
+The same secret key is used for encryption and decryption.
+
+```text
+Secret Key
+   ↓
+Encrypt → Data → Decrypt
+             ↑
+        Same Secret Key
+```
+
+**Main advantage:** Fast.
+
+---
+
+## Asymmetric Encryption
+
+Two keys are used:
+
+* **Public Key** → Can be shared with others
+* **Private Key** → Must be kept secret
+
+```text
+Public Key  → Share
+Private Key → Keep Secret
+```
+
+Asymmetric cryptography is important for authentication, digital signatures, and secure key exchange.
+
+---
+
+# 3. RSA
+
+**RSA** = an asymmetric/public-key cryptography algorithm.
+
+The basic idea behind RSA security is that factoring a very large number into its prime factors is computationally difficult.
+
+Important RSA terms:
+
+* `p` = Prime number
+* `q` = Another prime number
+* `n` = `p × q`
+* `e` = Public exponent
+* `d` = Private exponent
+* `m` = Plaintext/message
+* `c` = Ciphertext/encrypted message
+
+RSA public key:
+
+```text
+(n, e)
+```
+
+RSA private key:
+
+```text
+(n, d)
+```
+
+### Euler Totient Function
+
+`φ(n)` = Euler's Totient Function.
+
+In RSA, when:
+
+```text
+n = p × q
+```
+
+then:
+
+```text
+φ(n) = (p - 1)(q - 1)
+```
+
+---
+
+# 4. Diffie-Hellman (DH)
+
+The main purpose of Diffie-Hellman is:
+
+> Two parties can establish a **shared secret** over an insecure network without directly sending the secret.
+
+Important terms:
+
+* `p` = Public prime number
+* `g` = Public generator
+* `a` = Alice's private/secret number
+* `b` = Bob's private/secret number
+* `A` = Alice's public value
+* `B` = Bob's public value
+
+### Example
+
+```text
+p = 29
+g = 3
+```
+
+Alice:
+
+```text
+a = 13
+```
+
+`a` = Alice's secret number.
+
+Alice's public value:
+
+```text
+A = g^a mod p
+A = 3^13 mod 29
+A = 19
+```
+
+Bob:
+
+```text
+b = 15
+```
+
+`b` = Bob's secret number.
+
+Bob's public value:
+
+```text
+B = g^b mod p
+B = 3^15 mod 29
+B = 26
+```
+
+Alice and Bob exchange `A` and `B`.
+
+Alice calculates:
+
+```text
+B^a mod p
+= 26^13 mod 29
+= 10
+```
+
+Bob calculates:
+
+```text
+A^b mod p
+= 19^15 mod 29
+= 10
+```
+
+Therefore:
+
+```text
+Shared Secret = 10
+```
+
+**Important:** The value `10` was never directly sent over the network.
+
+For this basic DH example:
+
+```text
+Public → p, g, A, B
+Secret → a, b
+```
+
+---
+
+# 5. SSH Server Authentication
+
+When connecting to an SSH server, the first question is:
+
+> **"Is this the real server?"**
+
+The SSH server can provide a **fingerprint of its public key**.
+
+Example:
+
+```text
+ED25519 key fingerprint is SHA256:...
+```
+
+**Fingerprint** = a short representation/identifier of a public key.
+
+During the first connection, SSH may ask:
+
+```text
+Are you sure you want to continue connecting?
+```
+
+If the user accepts, SSH normally records the server's key in:
+
+```text
+~/.ssh/known_hosts
+```
+
+`~` = the current user's home directory.
+
+If the server provides a different key during a future connection, SSH can show a warning.
+
+This can help detect situations such as a possible **Man-in-the-Middle (MITM)** attack.
+
+---
+
+# 6. SSH Client Authentication
+
+After verifying the server, the server needs to verify:
+
+> **"Who is the client/user?"**
+
+Common authentication methods:
+
+```text
+Username + Password
+```
+
+or
+
+```text
+SSH Public/Private Key Authentication
+```
+
+With SSH key authentication:
+
+### Client has:
+
+```text
+Private Key
+```
+
+### Server has:
+
+```text
+Public Key
+```
+
+**The server does not have the client's private key.**
+
+The client does not send the private key to the server. Instead, the private key is used to create a proof/signature that the server can verify using the public key.
+
+---
+
+# 7. SSH Key Generation
+
+Command:
+
+```bash
+ssh-keygen -t ed25519
+```
+
+* `ssh-keygen` = program used to generate SSH key pairs
+* `-t` = specifies the key type
+* `ed25519` = key/signature algorithm
+
+Usually, the files are:
+
+```text
+id_ed25519
+id_ed25519.pub
+```
+
+`id_ed25519`:
+
+```text
+Private Key
+```
+
+`id_ed25519.pub`:
+
+```text
+Public Key
+```
+
+### Important
+
+Keep the private SSH key secret, just like a password.
+
+---
+
+# 8. SSH Passphrase
+
+A passphrase can be used to provide extra protection for a private key.
+
+```text
+Private Key
+     ↓
+Passphrase protection
+     ↓
+Protected Private Key
+```
+
+**The passphrase is not sent to the server.**
+
+It is used locally to unlock/protect the private key.
+
+---
+
+# 9. SSH `authorized_keys`
+
+The server commonly has:
+
+```text
+~/.ssh/authorized_keys
+```
+
+`authorized_keys` = a list of **public keys that are allowed to authenticate** to that account.
+
+Example:
+
+```text
+Server
+ └── ~/.ssh/
+      └── authorized_keys
+             ├── Public Key 1
+             └── Public Key 2
+```
+
+If your public key is configured in `authorized_keys` and you have the matching private key, key-based SSH login may be possible.
+
+---
+
+# 10. SSH Private Key Permissions
+
+Private key permissions should be restrictive.
+
+A common permission is:
+
+```text
+600
+```
+
+Simple meaning:
+
+```text
+Owner  → read + write
+Others → no access
+```
+
+If the permissions are too open, SSH may refuse to use the private key.
+
+---
+
+# 11. SSH `-i`
+
+Command:
+
+```bash
+ssh -i privateKeyFileName user@host
+```
+
+* `ssh` = SSH client
+* `-i` = specifies the identity/private-key file
+* `privateKeyFileName` = private key file
+* `user` = username on the remote machine
+* `host` = remote server/host
+
+---
+
+# 12. Digital Signature
+
+The main purposes of a digital signature are:
+
+1. **Authenticity** verification
+2. **Integrity** verification
+
+Digital signature:
+
+```text
+Private Key
+     ↓
+   Sign
+     ↓
+Digital Signature
+```
+
+Verification:
+
+```text
+Digital Signature
+       +
+Public Key
+       ↓
+    Verify
+```
+
+### Important Rule
+
+```text
+SIGN     → Private Key
+VERIFY   → Public Key
+```
+
+Modern digital signatures usually sign a **hash of the document** rather than simply encrypting the entire document with the private key.
+
+---
+
+# 13. Hash + Digital Signature
+
+Example:
+
+```text
+Document
+    ↓
+  Hash
+    ↓
+ABC123
+```
+
+The signer uses their private key to create a signature for the hash.
+
+The receiver:
+
+```text
+Received Document
+       ↓
+      Hash
+       ↓
+   New Hash
+```
+
+The receiver also verifies the signature using the public key.
+
+If the verification succeeds and the hashes match:
+
+```text
+Document unchanged
+Signature valid
+```
+
+If the document was changed:
+
+```text
+Original Hash ≠ New Hash
+```
+
+The integrity verification will fail.
+
+---
+
+# 14. Certificate
+
+Websites use **TLS certificates** for HTTPS.
+
+Question:
+
+> How does the browser know that the website/server it is communicating with is genuine?
+
+Answer:
+
+### **TLS Certificate**
+
+A certificate associates a website/domain's identity with a public key.
+
+---
+
+# 15. CA — Certificate Authority
+
+**CA = Certificate Authority**
+
+A CA is a trusted organisation that issues and signs certificates.
+
+Browsers/operating systems have some **Root CAs** that they already trust.
+
+### Chain of Trust
+
+```text
+Website Certificate
+        ↓
+Signed/issued by CA
+        ↓
+Browser trusts CA
+        ↓
+Browser trusts certificate
+```
+
+This is called a:
+
+**Chain of Trust**
+
+### Exam Question
+
+**What does a remote web server use to prove itself to the client?**
+
+**Answer: TLS certificate**
+
+---
+
+# 16. PGP
+
+**PGP = Pretty Good Privacy**
+
+PGP can be used for encryption and digital signing.
+
+Common uses:
+
+* Email encryption
+* File encryption
+* Digital signatures
+* Integrity verification
+
+---
+
+# 17. GPG
+
+**GPG = GNU Privacy Guard**
+
+GPG is an open-source implementation of the **OpenPGP standard**.
+
+GPG also uses:
+
+```text
+Public Key  → Share
+Private Key → Keep Secret
+```
+
+---
+
+# 18. GPG Encryption
+
+If someone wants to send you an encrypted message:
+
+```text
+Sender
+   ↓
+Your Public Key
+   ↓
+Encrypted Message
+```
+
+You decrypt it using:
+
+```text
+Encrypted Message
+       ↓
+Your Private Key
+       ↓
+Original Message
+```
+
+### Important
+
+```text
+ENCRYPT FOR YOU → Your Public Key
+DECRYPT         → Your Private Key
+```
+
+---
+
+# 19. GPG Digital Signing
+
+For signing:
+
+```text
+Private Key
+     ↓
+Digital Signature
+```
+
+For verification:
+
+```text
+Public Key
+     ↓
+Verify Signature
+```
+
+So:
+
+```text
+SIGN   → Private Key
+VERIFY → Public Key
+```
+
+---
+
+# 20. Generate GPG Key
+
+Command:
+
+```bash
+gpg --full-gen-key
+```
+
+* `gpg` = GPG program
+* `--full-gen-key` = starts the complete key-generation process
+
+During generation, GPG may ask for:
+
+* Key type
+* Cryptographic algorithm
+* Key expiry
+* Name
+* Email
+* Comment
+* Passphrase
+
+---
+
+# 21. GPG Key Expiry
+
+Examples:
+
+```text
+0   = Does not expire
+10d = 10 days
+2w  = 2 weeks
+3m  = 3 months
+1y  = 1 year
+```
+
+Where:
+
+* `d` = days
+* `w` = weeks
+* `m` = months
+* `y` = years
+
+---
+
+# 22. GPG Private Key Protection
+
+GPG private keys can also be protected with a **passphrase**, similar to SSH private keys.
+
+Private key:
+
+```text
+Secret
+```
+
+Passphrase:
+
+```text
+Protects/unlocks the private key
+```
+
+The passphrase itself is not the same thing as the private key.
+
+---
+
+# 23. Import a GPG Key
+
+If you have a backup/private key file:
+
+```bash
+gpg --import backup.key
+```
+
+* `--import` = adds/imports an existing key into the GPG keyring
+* `backup.key` = key backup file
+
+Check secret/private keys:
+
+```bash
+gpg --list-secret-keys
+```
+
+`--list-secret-keys` = lists the available private/secret keys.
+
+---
+
+# 24. Decrypt `.gpg` File
+
+If you have:
+
+```text
+message.gpg
+```
+
+you can decrypt it using:
+
+```bash
+gpg --decrypt message.gpg
+```
+
+* `--decrypt` = decrypts the encrypted file
+* `message.gpg` = encrypted file
+
+To save the decrypted content into a file:
+
+```bash
+gpg --output message.txt --decrypt message.gpg
+```
+
+* `--output` = specifies the output file
+* `message.txt` = decrypted output file
+* `--decrypt` = decrypt
+* `message.gpg` = encrypted input
+
+### Requirement
+
+To decrypt the message, the matching **private/secret key** must be available.
+
+---
+
+# MOST IMPORTANT CHEAT SHEET
+
+```text
+ASYMMETRIC
+Public Key  → Share
+Private Key → Secret
+```
+
+```text
+ENCRYPTION
+Public Key  → Encrypt
+Private Key → Decrypt
+```
+
+```text
+DIGITAL SIGNATURE
+Private Key → Sign
+Public Key  → Verify
+```
+
+```text
+SSH
+known_hosts     → Known server keys
+authorized_keys → Allowed client public keys
+```
+
+```text
+HTTPS
+TLS Certificate → Web server identity
+CA              → Certificate trust
+```
+
+```text
+GPG
+gpg --full-gen-key
+        ↓
+Generate GPG key
+
+gpg --import backup.key
+        ↓
+Import key
+
+gpg --decrypt message.gpg
+        ↓
+Decrypt GPG message
+```
+
+## One-line Memory Trick
+
+**"Public key to lock/encrypt, private key to unlock/decrypt; private key to sign, public key to verify."**
+
+And remember:
+
+**A web server uses a TLS certificate to prove its identity to the client.**
