@@ -1,0 +1,3242 @@
+# Malware Analysis & Reverse Engineering THM Module 12
+
+## Contents
+
+1. CyberChef — The Basics
+2. CAPA — The Basics
+3. REMnux — Getting Started
+4. FlareVM — Arsenal of Tools
+5. Static vs Dynamic Analysis
+6. Malware Analysis Workflow
+7. Tool Selection Cheat Sheet
+8. Important Terms & Common Confusions
+9. Final Revision Map
+
+---
+
+# 1. CyberChef — The Basics
+
+## 1.1 What is CyberChef?
+
+**CyberChef** is a web-based data transformation and analysis tool.
+
+It can be used to:
+
+* Decode data
+* Encode data
+* Decrypt data when the required key/method is known
+* Encrypt data
+* Decompress data
+* Transform data
+* Extract information
+* Search and replace text
+* Analyse encoded or obfuscated data
+
+CyberChef is commonly useful in:
+
+* Malware analysis
+* Incident response
+* Digital forensics
+* CTFs
+* Security investigations
+
+Basic workflow:
+
+```text
+Raw / Obfuscated Data
+        |
+        v
+    CyberChef
+        |
+        v
+Decode / Transform / Extract
+        |
+        v
+Readable Information
+```
+
+---
+
+## 1.2 Why is CyberChef Useful in Malware Analysis?
+
+Malware samples and suspicious files may contain:
+
+* Base64-encoded strings
+* Hexadecimal data
+* URL encoding
+* XOR-obfuscated data
+* Compressed data
+* Obfuscated text
+* Embedded URLs
+* IP addresses
+
+For example:
+
+```text
+SGVsbG8gV29ybGQ=
+```
+
+This is Base64-encoded data.
+
+Applying:
+
+```text
+From Base64
+```
+
+produces:
+
+```text
+Hello World
+```
+
+The important idea is that CyberChef helps an analyst **transform suspicious data into a more understandable representation**.
+
+---
+
+# 1.3 CyberChef Interface
+
+Important areas include:
+
+## Operations
+
+Contains available operations such as:
+
+* From Base64
+* To Base64
+* From Hex
+* To Hex
+* URL Decode
+* URL Encode
+* XOR
+* ROT13
+* Find / Replace
+* Extract URLs
+* Extract IP addresses
+* Gunzip
+* Strings
+
+---
+
+## Recipe
+
+A **Recipe** is a sequence of operations applied to the input.
+
+Example:
+
+```text
+Input
+  |
+  v
+From Base64
+  |
+  v
+XOR
+  |
+  v
+Gunzip
+  |
+  v
+Output
+```
+
+Recipes are useful when data has multiple transformation layers.
+
+---
+
+## Input
+
+The original data being analysed or transformed.
+
+## Output
+
+The result after the recipe has been applied.
+
+---
+
+# 1.4 CyberChef Recipes
+
+A recipe can contain multiple operations.
+
+Example:
+
+```text
+Encoded Data
+      |
+      v
+From Base64
+      |
+      v
+XOR
+      |
+      v
+Gunzip
+      |
+      v
+Readable Output
+```
+
+Instead of manually performing every transformation, the recipe allows the same sequence to be reproduced consistently.
+
+---
+
+# 1.5 Encoding vs Encryption vs Hashing
+
+This distinction is extremely important.
+
+## Encoding
+
+Encoding changes the representation of data.
+
+Example:
+
+```text
+Hello
+  |
+  | Base64
+  v
+SGVsbG8=
+```
+
+Encoding is generally reversible without a secret key.
+
+### Purpose
+
+Usually representation, compatibility, or transport.
+
+---
+
+## Encryption
+
+Encryption is designed to protect confidentiality.
+
+```text
+Plaintext
+    |
+    v
+Encryption + Key
+    |
+    v
+Ciphertext
+```
+
+Decryption normally requires the appropriate key or secret.
+
+### Purpose
+
+**Confidentiality**
+
+---
+
+## Hashing
+
+Hashing produces a fixed-length representation of input data.
+
+```text
+Input
+  |
+  v
+Hash Function
+  |
+  v
+Hash
+```
+
+Examples:
+
+```text
+MD5
+SHA-1
+SHA-256
+SHA-512
+```
+
+Cryptographic hashes are designed to be one-way for practical purposes.
+
+### Purpose
+
+Depending on the application, hashing can be used for:
+
+* Integrity verification
+* File identification
+* Password storage when used with an appropriate password-hashing scheme
+* Digital signatures as part of a larger process
+
+### Memory Rule
+
+```text
+Encoding   → Representation
+Encryption → Confidentiality
+Hashing    → Fingerprint / Integrity
+```
+
+---
+
+# 1.6 Common CyberChef Operations
+
+## From Base64
+
+Used to decode Base64 data.
+
+Example:
+
+```text
+SGVsbG8=
+```
+
+Operation:
+
+```text
+From Base64
+```
+
+Result:
+
+```text
+Hello
+```
+
+---
+
+## To Base64
+
+Converts data to Base64.
+
+```text
+Hello
+  |
+  v
+To Base64
+  |
+  v
+SGVsbG8=
+```
+
+---
+
+## From Hex
+
+Converts hexadecimal representation into the corresponding bytes/text when appropriate.
+
+Example:
+
+```text
+48 65 6c 6c 6f
+```
+
+can represent:
+
+```text
+Hello
+```
+
+---
+
+## URL Decode
+
+Converts URL-encoded data back into its decoded representation.
+
+Example:
+
+```text
+%48%65%6C%6C%6F
+```
+
+becomes:
+
+```text
+Hello
+```
+
+---
+
+## ROT13
+
+ROT13 shifts alphabetic characters by 13 positions.
+
+Example:
+
+```text
+Hello
+```
+
+becomes:
+
+```text
+Uryyb
+```
+
+Applying ROT13 again restores the original text.
+
+ROT13 is **encoding/obfuscation**, not encryption.
+
+---
+
+## XOR
+
+XOR is a bitwise logical operation.
+
+It is frequently encountered in simple obfuscation schemes.
+
+Concept:
+
+```text
+Original Data
+      +
+    XOR Key
+      |
+      v
+Obfuscated Data
+```
+
+Applying the same XOR key again can recover the original data:
+
+```text
+Data XOR Key XOR Key = Data
+```
+
+This is why XOR-based obfuscation is often reversible when the key is known.
+
+---
+
+# 1.7 Find / Replace
+
+Find / Replace can help clean or transform obfuscated strings.
+
+For example, if a string contains unnecessary characters:
+
+```text
+S^qt*new
+```
+
+and the analysis shows that:
+
+```text
+^
+*
+```
+
+are unwanted characters, CyberChef can remove them.
+
+Concept:
+
+```text
+Find: ^
+Replace: [empty]
+```
+
+and:
+
+```text
+Find: *
+Replace: [empty]
+```
+
+Result:
+
+```text
+Sqtnew
+```
+
+Important:
+
+> Do not assume characters are meaningless without understanding how the original program processes them.
+
+---
+
+# 1.8 Extract URLs
+
+Useful when analysing large text or decoded output.
+
+Example input may contain:
+
+```text
+http://example.com
+https://example.org/login
+https://example.net/payload
+```
+
+CyberChef can help extract URLs from the larger dataset.
+
+This can provide potential indicators for further investigation.
+
+---
+
+# 1.9 Extract IP Addresses
+
+CyberChef can also help identify IPv4 addresses inside large text.
+
+Example:
+
+```text
+192.168.1.10
+10.10.20.5
+172.16.0.15
+```
+
+These may become useful indicators during investigation.
+
+An extracted IP is an **indicator**, not automatically proof of malicious activity.
+
+---
+
+# 1.10 CyberChef Malware Analysis Workflow
+
+A sensible workflow is:
+
+```text
+Suspicious String
+      |
+      v
+Identify Possible Format
+      |
+      +---- Base64?
+      |
+      +---- Hex?
+      |
+      +---- URL Encoding?
+      |
+      +---- XOR?
+      |
+      v
+Apply Appropriate Operation
+      |
+      v
+Inspect Result
+      |
+      v
+Another Encoding Layer?
+      |
+      +---- Yes → Analyse Again
+      |
+      +---- No → Extract Useful Information
+```
+
+### Important Rule
+
+Do not randomly apply operations until something looks readable.
+
+Instead ask:
+
+> What format or transformation could explain this data?
+
+---
+
+# 1.11 CyberChef Quick Revision
+
+```text
+CyberChef
+→ Data transformation and analysis
+
+Recipe
+→ Sequence of operations
+
+Base64
+→ Encoding
+
+Hex
+→ Representation of bytes/data
+
+XOR
+→ Bitwise operation, often encountered in obfuscation
+
+URL Decode
+→ Decode URL-encoded data
+
+Find / Replace
+→ Transform or clean text
+
+Extract URLs
+→ Identify URLs
+
+Extract IP Addresses
+→ Identify IP indicators
+```
+
+---
+
+# 2. CAPA — The Basics
+
+## 2.1 What is CAPA?
+
+**CAPA** is a malware analysis tool designed to identify capabilities present in executable files.
+
+A simple way to remember it:
+
+> **CAPA answers: "What can this program do?"**
+
+Possible capabilities include:
+
+```text
+Create Process
+Create Service
+Modify Registry
+Communicate Over Network
+Download Files
+Execute Commands
+Access Credentials
+```
+
+The exact output depends on the sample and the CAPA rules/version being used.
+
+---
+
+# 2.2 Why Use CAPA?
+
+Suppose an unknown executable is discovered:
+
+```text
+malware.exe
+```
+
+Instead of immediately performing deep reverse engineering, CAPA can provide a high-level view of potential capabilities.
+
+Workflow:
+
+```text
+Executable
+    |
+    v
+   CAPA
+    |
+    v
+Capabilities
+    |
+    v
+High-Level Behaviour Understanding
+```
+
+---
+
+# 2.3 CAPA as Static Analysis
+
+CAPA is primarily used for **static analysis**.
+
+The executable is analysed without intentionally executing it.
+
+```text
+CAPA
+ |
+ v
+Static Analysis
+```
+
+This can provide useful initial information before deeper investigation.
+
+However, static analysis does not reveal every runtime behaviour.
+
+---
+
+# 2.4 Basic CAPA Syntax
+
+Basic usage:
+
+```bash
+capa sample.exe
+```
+
+Breakdown:
+
+```text
+capa
+ |
+ +-- CAPA executable/program
+
+sample.exe
+ |
+ +-- File being analysed
+```
+
+Depending on the installation, additional options may be available.
+
+To view help:
+
+```bash
+capa -h
+```
+
+---
+
+# 2.5 CAPA Output
+
+CAPA may report capabilities/rules such as:
+
+```text
+create-process
+network communication
+modify registry
+download file
+```
+
+This provides a high-level behavioural picture.
+
+A simplified model:
+
+```text
+Observed Code / Patterns
+          |
+          v
+      CAPA Rules
+          |
+          v
+    Capability Match
+          |
+          v
+   Analyst Interpretation
+```
+
+---
+
+# 2.6 CAPA Rules
+
+CAPA uses rules to identify patterns associated with behaviours or capabilities.
+
+Concept:
+
+```text
+Executable
+    |
+    v
+Patterns / Features
+    |
+    v
+CAPA Rule
+    |
+    v
+Capability
+```
+
+For example, patterns associated with process creation may allow CAPA to identify a process-creation capability.
+
+---
+
+# 2.7 CAPA Does Not Prove Maliciousness
+
+This is one of the most important points.
+
+```text
+CAPA detects a capability
+          ≠
+CAPA proves malware
+```
+
+For example:
+
+```text
+Create Process
+```
+
+is not inherently malicious.
+
+Legitimate software also creates processes.
+
+Therefore, CAPA results should be correlated with other evidence.
+
+Example:
+
+```text
+CAPA
+  +
+PEStudio
+  +
+FLOSS
+  +
+Ghidra
+  +
+Dynamic Analysis
+  +
+Network Analysis
+```
+
+Together, these can provide stronger evidence.
+
+---
+
+# 2.8 CAPA and MITRE ATT&CK
+
+CAPA can provide ATT&CK-related mappings for capabilities where applicable.
+
+Conceptually:
+
+```text
+Malware Capability
+       |
+       v
+MITRE ATT&CK Technique
+       |
+       v
+Possible Adversary Behaviour
+```
+
+**MITRE ATT&CK** is a knowledge base describing adversary tactics and techniques.
+
+Important:
+
+> An ATT&CK mapping is behavioural context, not automatic proof that a sample belongs to a particular threat actor.
+
+---
+
+# 2.9 CAPA vs Other Tools
+
+| Tool             | Main Purpose                                   |
+| ---------------- | ---------------------------------------------- |
+| PEStudio         | PE properties and static triage                |
+| CAPA             | Capability/behaviour identification            |
+| FLOSS            | String extraction and deobfuscation assistance |
+| Ghidra           | Reverse engineering                            |
+| x64dbg           | Debugging                                      |
+| Procmon          | Runtime/system activity monitoring             |
+| Process Explorer | Process investigation                          |
+| Wireshark        | Network traffic analysis                       |
+
+---
+
+# 2.10 CAPA Quick Revision
+
+```text
+CAPA
+→ What can this program potentially do?
+
+CAPA
+→ Static analysis
+
+CAPA
+→ Rule-based capability identification
+
+CAPA result
+≠
+Automatic proof of malware
+```
+
+---
+
+# 3. REMnux — Getting Started
+
+## 3.1 What is REMnux?
+
+**REMnux** is a Linux-based environment/distribution designed for malware analysis and reverse engineering.
+
+It provides a collection of tools useful for:
+
+* Malware analysis
+* Reverse engineering
+* Network analysis
+* Digital forensics
+* Incident response
+* Document analysis
+
+---
+
+# 3.2 Why Use REMnux?
+
+Without a dedicated environment, an analyst may need to install many individual tools.
+
+REMnux brings many useful tools together:
+
+```text
+Linux Environment
+       +
+Malware Analysis Tools
+       +
+Network Tools
+       +
+Forensics Tools
+       +
+Reverse Engineering Tools
+```
+
+---
+
+# 3.3 Typical REMnux Role
+
+A REMnux system can act as part of a controlled malware-analysis lab.
+
+Example:
+
+```text
+Suspicious File
+      |
+      v
+    REMnux
+      |
+      +-- Static Analysis
+      |
+      +-- Document Analysis
+      |
+      +-- Network Simulation
+      |
+      +-- Supporting Analysis
+```
+
+---
+
+# 3.4 REMnux vs FlareVM
+
+Both environments support malware analysis, but they are based on different operating systems.
+
+| REMnux                             | FlareVM                              |
+| ---------------------------------- | ------------------------------------ |
+| Linux-based                        | Windows-based                        |
+| Linux malware-analysis environment | Windows malware-analysis environment |
+| Linux CLI tools                    | Windows GUI tools                    |
+| INetSim                            | Procmon                              |
+| Linux utilities                    | Process Explorer                     |
+| oledump                            | PEStudio                             |
+| Volatility                         | FLOSS                                |
+
+### Memory
+
+```text
+REMnux  → Linux Malware Analysis
+FlareVM → Windows Malware Analysis
+```
+
+They can be complementary rather than mutually exclusive.
+
+---
+
+# 3.5 oledump
+
+**oledump** is useful for analysing OLE/Office documents and their streams.
+
+Example:
+
+```bash
+oledump.py agenttesla.xlsm
+```
+
+The output can help identify streams contained within the Office document.
+
+Concept:
+
+```text
+Office Document
+      |
+      v
+   oledump
+      |
+      v
+    Streams
+      |
+      v
+Potential Macro / Embedded Content
+```
+
+---
+
+# 3.6 Selecting an oledump Stream
+
+Example:
+
+```bash
+oledump.py agenttesla.xlsm -s 4
+```
+
+### `-s`
+
+Selects a specific stream.
+
+```text
+-s 4
+```
+
+means:
+
+```text
+Select stream 4
+```
+
+---
+
+# 3.7 VBA Decompression
+
+Example:
+
+```bash
+oledump.py agenttesla.xlsm -s 4 --vbadecompress
+```
+
+This is useful when analysing compressed VBA content.
+
+Workflow:
+
+```text
+XLSM
+ |
+ v
+OLE Streams
+ |
+ v
+VBA Stream
+ |
+ v
+Decompression
+ |
+ v
+Readable Macro Content
+```
+
+---
+
+# 3.8 Obfuscated VBA
+
+Malicious or suspicious VBA may construct strings dynamically.
+
+Example:
+
+```text
+S^qt*new
+```
+
+Code might contain logic equivalent to:
+
+```text
+Replace("^", "")
+Replace("*", "")
+```
+
+which could result in:
+
+```text
+Sqtnew
+```
+
+The important point is to understand the **program logic that generates the final value**, rather than assuming the visible string is the complete value.
+
+CyberChef's Find/Replace operation can assist with manual transformation once the logic is understood.
+
+---
+
+# 3.9 Example Execution Chain
+
+A suspicious Office document may contain a chain such as:
+
+```text
+Excel Document
+      |
+      v
+VBA Macro
+      |
+      v
+PowerShell
+      |
+      v
+Download Payload
+      |
+      v
+Execute Payload
+```
+
+This is an example of an **execution chain**.
+
+During analysis, each stage should be validated using available evidence.
+
+---
+
+# 3.10 INetSim
+
+**INetSim = Internet Services Simulation Suite**
+
+INetSim can simulate common network services in a controlled analysis environment.
+
+Instead of allowing a suspicious sample to communicate directly with the real Internet:
+
+```text
+Suspicious Sample
+       |
+       v
+   INetSim
+       |
+       +-- DNS Simulation
+       +-- HTTP Simulation
+       +-- HTTPS Simulation
+       +-- Other Services
+```
+
+This can help analysts observe network behaviour in a controlled environment.
+
+---
+
+# 3.11 Why Use INetSim?
+
+A suspicious sample may attempt to:
+
+* Perform DNS lookups
+* Make HTTP requests
+* Connect using HTTPS
+* Download resources
+
+INetSim can simulate relevant services so that the analyst can observe the interaction without relying on live external services.
+
+---
+
+# 3.12 INetSim Configuration
+
+A common configuration file is:
+
+```bash
+/etc/inetsim/inetsim.conf
+```
+
+Search for a configuration value:
+
+```bash
+cat /etc/inetsim/inetsim.conf | grep dns_default_ip
+```
+
+Breakdown:
+
+```text
+cat
+ |
+ +-- Display file contents
+
+|
+ |
+ +-- Pipe output
+
+grep dns_default_ip
+ |
+ +-- Search for matching configuration
+```
+
+A shorter equivalent is:
+
+```bash
+grep dns_default_ip /etc/inetsim/inetsim.conf
+```
+
+---
+
+# 3.13 Starting INetSim
+
+Example:
+
+```bash
+sudo inetsim
+```
+
+### `sudo`
+
+Runs the command with elevated privileges when the current user is permitted to do so.
+
+A successful startup should provide status information indicating that the services are running.
+
+---
+
+# 3.14 Self-Signed Certificates
+
+A controlled lab may use a self-signed HTTPS certificate rather than one issued by a publicly trusted Certificate Authority.
+
+As a result, a browser or client may display a certificate warning.
+
+In a dedicated lab, accepting that certificate may be part of the exercise.
+
+---
+
+# 3.15 wget
+
+`wget` is a command-line utility for downloading files.
+
+Example:
+
+```bash
+sudo wget https://MACHINE_IP/second_payload.zip --no-check-certificate
+```
+
+### Important Parts
+
+```text
+wget
+ |
+ +-- Download utility
+
+https://MACHINE_IP/second_payload.zip
+ |
+ +-- Resource being requested
+
+--no-check-certificate
+ |
+ +-- Disable TLS certificate verification
+```
+
+### Security Note
+
+`--no-check-certificate` bypasses certificate validation.
+
+It can be useful in controlled labs using self-signed certificates, but it should not be used casually for real-world trusted downloads because it removes an important security check.
+
+---
+
+# 3.16 INetSim Reports
+
+INetSim reports may be stored under:
+
+```text
+/var/log/inetsim/report/
+```
+
+Example:
+
+```bash
+sudo cat /var/log/inetsim/report/report.SESSION_ID.txt
+```
+
+Reports can contain information such as:
+
+```text
+Timestamp
+Protocol
+Method
+URL
+Requested File
+```
+
+This information can help reconstruct the sample's network activity.
+
+---
+
+# 3.17 HTTP GET
+
+HTTP:
+
+```text
+GET
+```
+
+is generally used to request a resource from a server.
+
+Example:
+
+```text
+GET /payload.exe
+```
+
+Concept:
+
+```text
+Client
+  |
+  | GET /payload.exe
+  v
+Server
+  |
+  v
+Requested Resource
+```
+
+---
+
+# 3.18 REMnux + AttackBox Architecture
+
+A simplified lab architecture:
+
+```text
+             +----------------+
+             |   AttackBox    |
+             |     Client     |
+             +-------+--------+
+                     |
+                     | Network
+                     |
+                     v
+             +----------------+
+             |     REMnux     |
+             |     Server     |
+             |    INetSim     |
+             +----------------+
+```
+
+The client interacts with the controlled services provided by the REMnux environment.
+
+---
+
+# 4. FlareVM — Arsenal of Tools
+
+## 4.1 What is FlareVM?
+
+**FlareVM** is a Windows-based malware-analysis environment containing a collection of tools for:
+
+* Static analysis
+* Dynamic analysis
+* Reverse engineering
+* Debugging
+* PE analysis
+* Forensics
+* Network analysis
+* System monitoring
+
+---
+
+# 4.2 FlareVM Tool Arsenal
+
+Important tools include:
+
+```text
+PEStudio
+FLOSS
+CFF Explorer
+HxD
+Procmon
+Process Explorer
+Wireshark
+Ghidra
+x64dbg
+Volatility
+Nmap
+Autoruns
+```
+
+---
+
+# 4.3 PEStudio
+
+**PEStudio** is useful for performing initial static triage of Windows executable files.
+
+It can expose information such as:
+
+* File properties
+* Hashes
+* Imports
+* Strings
+* Entropy
+* Metadata
+* PE characteristics
+
+Example:
+
+```text
+windows.exe
+      |
+      v
+   PEStudio
+      |
+      +-- MD5
+      +-- SHA-1
+      +-- SHA-256
+      +-- Imports
+      +-- Strings
+      +-- Metadata
+      +-- Entropy
+```
+
+PEStudio helps answer:
+
+> "What should I investigate next?"
+
+---
+
+# 4.4 Masquerading
+
+A suspicious file may use a legitimate-looking name.
+
+Example:
+
+```text
+windows.exe
+```
+
+but be located in:
+
+```text
+C:\Users\Administrator\Desktop\Sample\
+```
+
+It may also contain a description claiming to be:
+
+```text
+Windows Registry Editor
+```
+
+This can be suspicious depending on the context.
+
+### Important
+
+```text
+Suspicious filename/location
+≠
+Proof of malware
+```
+
+Analysts should correlate:
+
+* Filename
+* Location
+* Metadata
+* Imports
+* Strings
+* Hash
+* Behaviour
+* Network activity
+
+---
+
+# 4.5 File Hashes
+
+Common file hashes include:
+
+```text
+MD5
+SHA-1
+SHA-256
+```
+
+A hash can act as a file fingerprint.
+
+Concept:
+
+```text
+File
+ |
+ v
+SHA-256
+ |
+ v
+Hash Value
+```
+
+Uses include:
+
+* Sample identification
+* IOC matching
+* Integrity checking
+* Comparing copies
+* Searching threat-intelligence databases
+
+A hash identifies content; it does not by itself explain whether the file is malicious.
+
+---
+
+# 4.6 PE Metadata
+
+PE metadata may contain information such as:
+
+```text
+File Description
+Product Name
+Company
+Version
+Language
+Compiler-related information
+```
+
+Metadata should always be treated as evidence that requires context.
+
+Attackers can modify metadata.
+
+---
+
+# 4.7 Rich Header
+
+The **Rich Header** is metadata associated with the PE build environment and compiler/toolchain information.
+
+Its presence or absence can provide clues during analysis.
+
+For example:
+
+```text
+Unexpected / Missing Rich Header
+          |
+          v
+Investigate Further
+```
+
+Possible explanations can include:
+
+* Packing
+* Modification
+* Different build process
+* File transformation
+
+### Important
+
+```text
+Missing Rich Header
+≠
+Definitely Malware
+```
+
+It is an indicator for further investigation, not a verdict.
+
+---
+
+# 4.8 PE Imports and Functions
+
+Imported functions can provide clues about what functionality an executable may use.
+
+Example:
+
+```text
+set_UseShellExecute
+```
+
+may provide a clue related to process/shell execution functionality.
+
+Cryptographic-related APIs may include names such as:
+
+```text
+CryptoStream
+RijndaelManaged
+CipherMode
+CreateDecryptor
+```
+
+These can indicate that cryptographic functionality exists in the program.
+
+### Important
+
+```text
+Cryptographic API
+≠
+Malicious Behaviour
+```
+
+Legitimate applications also use encryption and cryptography.
+
+---
+
+# 4.9 Rijndael
+
+**Rijndael** is a symmetric block cipher family.
+
+**AES** is a standardized subset of the Rijndael design.
+
+Therefore:
+
+```text
+Rijndael
+   |
+   +-- Cipher family
+
+AES
+   |
+   +-- Standardized Rijndael variant
+```
+
+---
+
+# 4.10 FLOSS
+
+**FLOSS = FLARE Obfuscated String Solver**
+
+FLOSS is designed to extract strings from executable files and can assist with recovering strings that are constructed or obfuscated.
+
+It can help answer:
+
+> "What interesting strings are present in this executable?"
+
+---
+
+# 4.11 FLOSS Command
+
+Example:
+
+```powershell
+cd C:\Users\Administrator\Desktop\Sample
+FLOSS.exe .\windows.exe > windows.txt
+```
+
+Breakdown:
+
+### `cd`
+
+Changes the current directory.
+
+```powershell
+cd C:\Users\Administrator\Desktop\Sample
+```
+
+### `.\windows.exe`
+
+Refers to `windows.exe` in the current directory.
+
+### `>`
+
+Redirects standard output into a file.
+
+```text
+FLOSS Output
+     |
+     v
+windows.txt
+```
+
+---
+
+# 4.12 FLOSS Output
+
+FLOSS can identify different categories of strings depending on the sample.
+
+Conceptually:
+
+```text
+Static Strings
+Stack Strings
+Tight Strings
+Decoded Strings
+```
+
+### Static Strings
+
+Strings directly stored in the binary.
+
+### Stack Strings
+
+Strings constructed during execution in a way that can sometimes be recovered by FLOSS.
+
+### Tight Strings
+
+Strings constructed through instruction-level operations that can sometimes be recovered by FLOSS.
+
+### Decoded Strings
+
+Strings recovered after identifying decoding/deobfuscation behaviour.
+
+---
+
+# 4.13 Interpreting FLOSS Results
+
+Suppose FLOSS reports:
+
+```text
+Decoded strings: 0
+```
+
+This should be interpreted as:
+
+> No decoded strings were identified by FLOSS in this analysis.
+
+It does **not** mean:
+
+```text
+The file is clean.
+```
+
+A tool finding nothing is not proof that nothing exists.
+
+---
+
+# 4.14 Process Explorer
+
+**Process Explorer** is a Windows Sysinternals tool for detailed process investigation.
+
+It can provide information about:
+
+* Processes
+* Parent-child relationships
+* PID
+* Executable paths
+* Command lines
+* DLLs
+* User accounts
+* Network information
+
+---
+
+# 4.15 PID
+
+**PID = Process ID**
+
+It identifies a running process.
+
+Example:
+
+```text
+cobaltstrike.exe
+PID = 4756
+```
+
+The PID can change when the process is restarted.
+
+### Memory
+
+```text
+PID → Process ID
+```
+
+---
+
+# 4.16 PPID
+
+**PPID = Parent Process ID**
+
+It identifies the process that launched or is associated as the parent of another process.
+
+Example:
+
+```text
+explorer.exe
+      |
+      v
+cobaltstrike.exe
+```
+
+The child process may show the PID of `explorer.exe` as its PPID.
+
+### Memory
+
+```text
+PPID → Parent Process ID
+```
+
+---
+
+# 4.17 Command Line
+
+The command line shows how a process was launched, including the executable path and arguments.
+
+Example:
+
+```text
+C:\Users\Administrator\Desktop\Sample\cobaltstrike.exe
+```
+
+It can help identify:
+
+* Executable location
+* Arguments
+* Suspicious paths
+* Execution parameters
+
+### Important
+
+```text
+Command Line
+≠
+IP Address
+```
+
+---
+
+# 4.18 TCP/IP Information
+
+Process Explorer can provide network-related information associated with processes.
+
+Concept:
+
+```text
+Process
+   |
+   v
+TCP/IP Information
+   |
+   v
+Remote Endpoint
+```
+
+For example:
+
+```text
+Remote Address: 47.120.46.210
+Remote Port: 443
+```
+
+This may indicate that the process communicated with that endpoint.
+
+The IP and port should then be investigated in context.
+
+---
+
+# 4.19 Short-Lived Processes
+
+Some programs may execute briefly:
+
+```text
+Start
+  |
+  v
+Network Connection
+  |
+  v
+Exit
+```
+
+If a process exits quickly, its live network information may disappear from a process-inspection tool.
+
+Therefore, other monitoring tools such as Procmon or packet capture may provide additional evidence.
+
+---
+
+# 4.20 Procmon
+
+**Process Monitor (Procmon)** is a Sysinternals tool for monitoring system activity.
+
+It can capture events involving:
+
+* File system activity
+* Registry activity
+* Process activity
+* Thread activity
+
+This makes it useful for dynamic malware analysis.
+
+---
+
+# 4.21 Procmon Filter
+
+A common shortcut to open filtering is:
+
+```text
+Ctrl + L
+```
+
+Example filter:
+
+```text
+Process Name
+    contains
+cobalt
+    Include
+```
+
+Then:
+
+```text
+Add
+Apply
+```
+
+This reduces the amount of irrelevant activity shown.
+
+---
+
+# 4.22 Process Explorer vs Procmon
+
+This is an important distinction.
+
+### Process Explorer
+
+```text
+Process Explorer
+       |
+       v
+Process-centric investigation
+```
+
+Useful for:
+
+* Processes
+* Parent-child relationships
+* DLLs
+* Command lines
+* Network information
+
+### Procmon
+
+```text
+Procmon
+   |
+   v
+System activity monitoring
+```
+
+Useful for:
+
+* File operations
+* Registry operations
+* Process events
+* Threads
+* Real-time activity
+
+### Memory Rule
+
+```text
+Process Explorer → Process Investigation
+Procmon           → System Activity Monitoring
+```
+
+---
+
+# 4.23 HxD
+
+**HxD** is a hexadecimal editor.
+
+It allows analysts to inspect raw file bytes in hexadecimal form.
+
+Example:
+
+```text
+4D 5A
+```
+
+These bytes correspond to:
+
+```text
+4D → M
+5A → Z
+```
+
+Therefore:
+
+```text
+4D 5A
+```
+
+corresponds to:
+
+```text
+MZ
+```
+
+The `MZ` signature is commonly found at the beginning of Windows PE files.
+
+### Important
+
+The presence of `MZ` indicates a PE/DOS-header signature, but it does not determine whether a file is malicious.
+
+---
+
+# 4.24 CFF Explorer
+
+**CFF Explorer** can be used to inspect the internal structure of Portable Executable (PE) files.
+
+It can expose:
+
+* PE headers
+* Sections
+* Architecture
+* Imports
+* Exports
+* Metadata
+* Other PE structures
+
+Example:
+
+```text
+cryptominer.bin
+      |
+      v
+CFF Explorer
+      |
+      v
+PE Structure
+      |
+      +-- Architecture
+      +-- Sections
+      +-- Imports
+      +-- Headers
+```
+
+---
+
+# 4.25 PEStudio vs CFF Explorer
+
+```text
+PEStudio
+    |
+    v
+Quick Static Triage
+```
+
+```text
+CFF Explorer
+    |
+    v
+Detailed PE Structure
+```
+
+A practical workflow may use PEStudio first and CFF Explorer when deeper PE inspection is required.
+
+---
+
+# 4.26 Wireshark
+
+**Wireshark** is a network protocol and packet analyser.
+
+It can help investigate:
+
+* Network connections
+* DNS traffic
+* HTTP traffic
+* TLS traffic
+* Suspicious communication
+* Potential data transfer
+* Source and destination endpoints
+
+Useful information may include:
+
+```text
+Source IP
+Destination IP
+Source Port
+Destination Port
+Protocol
+Timestamp
+```
+
+---
+
+# 4.27 TLS Traffic
+
+Wireshark may show protocol information such as:
+
+```text
+TLSv1.2
+```
+
+TLS provides encrypted communication.
+
+However:
+
+```text
+TLS traffic
+≠
+Malicious traffic
+```
+
+Encrypted communication can be completely legitimate.
+
+Analysts need additional context such as:
+
+* Destination
+* Process responsible
+* Timing
+* Domain
+* Certificate
+* Payload metadata
+* Other system events
+
+---
+
+# 4.28 Ghidra
+
+**Ghidra** is a software reverse-engineering framework.
+
+It can assist with:
+
+* Disassembly
+* Decompilation
+* Function analysis
+* Control-flow analysis
+* Code analysis
+* Binary investigation
+
+Basic concept:
+
+```text
+Executable
+    |
+    v
+  Ghidra
+    |
+    +-- Assembly
+    |
+    +-- Decompiled Code
+    |
+    v
+Understand Program Logic
+```
+
+Ghidra is primarily used for deeper static reverse engineering.
+
+---
+
+# 4.29 x64dbg
+
+**x64dbg** is a Windows debugger.
+
+A debugger allows an analyst to inspect and control program execution.
+
+Useful features include:
+
+* Breakpoints
+* Registers
+* Memory
+* Instructions
+* Execution flow
+
+Concept:
+
+```text
+Program
+   |
+   v
+x64dbg
+   |
+   +-- Pause
+   +-- Inspect
+   +-- Step
+   +-- Examine Memory
+   +-- Observe Execution
+```
+
+### Ghidra vs x64dbg
+
+```text
+Ghidra
+→ Static reverse engineering
+```
+
+```text
+x64dbg
+→ Dynamic debugging
+```
+
+---
+
+# 4.30 Volatility
+
+**Volatility** is a memory-forensics framework.
+
+It is used to analyse memory images.
+
+Concept:
+
+```text
+RAM Image
+    |
+    v
+Volatility
+    |
+    +-- Processes
+    +-- Process Tree
+    +-- DLLs
+    +-- Command Lines
+    +-- Files
+    +-- Memory Regions
+    +-- Potentially Suspicious Memory
+```
+
+Examples using Volatility 3:
+
+### Process List
+
+```bash
+vol3 -f wcry.mem windows.pslist.PsList
+```
+
+Meaning:
+
+```text
+vol3
+ |
+ +-- Volatility 3
+
+-f wcry.mem
+ |
+ +-- Input memory image
+
+windows.pslist.PsList
+ |
+ +-- Windows process-list plugin
+```
+
+---
+
+### Process Tree
+
+```bash
+vol3 -f wcry.mem windows.pstree.PsTree
+```
+
+Useful for examining parent-child process relationships.
+
+---
+
+### DLL List
+
+```bash
+vol3 -f wcry.mem windows.dlllist.DllList
+```
+
+Useful for examining DLLs associated with processes.
+
+---
+
+### Command Lines
+
+```bash
+vol3 -f wcry.mem windows.cmdline.CmdLine
+```
+
+Useful for recovering command-line information from the memory image where available.
+
+---
+
+### File Scan
+
+```bash
+vol3 -f wcry.mem windows.filescan.FileScan
+```
+
+Can scan memory for file-related structures.
+
+---
+
+### Malfind
+
+```bash
+vol3 -f wcry.mem windows.malfind.Malfind
+```
+
+Can identify memory regions with characteristics that may warrant investigation for injected or suspicious code.
+
+### Important
+
+A `malfind` result is an **indicator for investigation**, not automatic proof of malware.
+
+---
+
+# 4.31 Nmap
+
+**Nmap = Network Mapper**
+
+Nmap is used for network discovery and service enumeration.
+
+Basic syntax:
+
+```bash
+nmap <IP>
+```
+
+Concept:
+
+```text
+Target Host
+    |
+    v
+  Nmap
+    |
+    v
+Open Ports
+    |
+    v
+Detected Services
+    |
+    v
+Potential Attack Surface
+```
+
+Example:
+
+```bash
+nmap 10.10.10.10
+```
+
+Only scan systems that you are authorized to test.
+
+---
+
+# 4.32 Autoruns
+
+**Autoruns** is a Windows Sysinternals tool for examining locations that cause programs to start automatically.
+
+It can help investigate:
+
+* Startup programs
+* Services
+* Scheduled tasks
+* Logon entries
+* Other persistence-related locations
+
+Concept:
+
+```text
+Windows Startup / Persistence Locations
+                 |
+                 v
+              Autoruns
+                 |
+                 v
+       What starts automatically?
+```
+
+---
+
+# 5. Static vs Dynamic Analysis
+
+This is one of the most important concepts in malware analysis.
+
+## 5.1 Static Analysis
+
+Static analysis examines a sample **without intentionally executing it**.
+
+Common tools:
+
+```text
+PEStudio
+CAPA
+FLOSS
+CFF Explorer
+HxD
+Ghidra
+oledump
+```
+
+Questions:
+
+```text
+What type of file is this?
+What are its hashes?
+What strings are present?
+What imports are present?
+What capabilities are indicated?
+What is the PE structure?
+Are macros present?
+What code or functions exist?
+```
+
+---
+
+# 5.2 Dynamic Analysis
+
+Dynamic analysis observes the sample while it executes in a controlled environment.
+
+Common tools:
+
+```text
+Procmon
+Process Explorer
+Wireshark
+INetSim
+x64dbg
+```
+
+Questions:
+
+```text
+What processes are created?
+What files are modified?
+What registry keys are changed?
+What network connections occur?
+What DNS requests occur?
+What remote endpoints are contacted?
+What happens at runtime?
+```
+
+---
+
+# 5.3 Why Use Both?
+
+Static analysis can reveal what the program **contains or appears capable of doing**.
+
+Dynamic analysis can reveal what the program **actually does during a particular execution**.
+
+Neither method alone necessarily gives the complete picture.
+
+```text
+Static Evidence
+      +
+Dynamic Evidence
+      +
+Network Evidence
+      +
+Memory / Code Evidence
+      |
+      v
+Correlated Analysis
+```
+
+---
+
+# 6. Complete Malware Analysis Workflow
+
+A practical workflow can look like:
+
+```text
+                 Suspicious Sample
+                        |
+                        v
+                  Identify / Hash
+                        |
+                        v
+                  Static Triage
+                        |
+          +-------------+-------------+
+          |             |             |
+          v             v             v
+       PEStudio        CAPA         FLOSS
+          |             |             |
+       PE Info      Capabilities    Strings
+          |             |             |
+          +-------------+-------------+
+                        |
+                        v
+                 Deeper Analysis
+                        |
+                +-------+-------+
+                |               |
+                v               v
+             Ghidra           HxD
+                |
+                v
+          Controlled Dynamic Lab
+                |
+        +-------+--------+--------+
+        |                |        |
+        v                v        v
+     Procmon       Process      Wireshark
+                   Explorer
+        |                |        |
+        +----------------+--------+
+                         |
+                         v
+                    Correlation
+                         |
+                         v
+                  Investigation
+                         |
+                         v
+                       Report
+```
+
+---
+
+# 6.1 Step 1 — Identify the Sample
+
+First collect basic information:
+
+```text
+Filename
+File Type
+File Size
+Hash
+Location
+```
+
+Hashes such as SHA-256 can help identify the sample.
+
+---
+
+# 6.2 Step 2 — Static Triage
+
+Use tools such as:
+
+```text
+PEStudio
+CAPA
+FLOSS
+CFF Explorer
+```
+
+Look for:
+
+* Suspicious imports
+* Interesting strings
+* Capabilities
+* PE anomalies
+* Metadata
+* Sections
+* Entropy
+* Embedded content
+
+---
+
+# 6.3 Step 3 — Reverse Engineering
+
+If required, use:
+
+```text
+Ghidra
+x64dbg
+HxD
+```
+
+to understand:
+
+* Functions
+* Code
+* Control flow
+* Algorithms
+* Obfuscation
+* Runtime behaviour
+
+---
+
+# 6.4 Step 4 — Dynamic Analysis
+
+Execute the sample only inside an appropriately isolated and authorized analysis environment.
+
+Observe:
+
+```text
+Processes
+Files
+Registry
+Network
+DNS
+Memory
+```
+
+Tools:
+
+```text
+Procmon
+Process Explorer
+Wireshark
+INetSim
+x64dbg
+```
+
+---
+
+# 6.5 Step 5 — Correlation
+
+Do not treat one indicator as a final conclusion.
+
+Example:
+
+```text
+PEStudio
+    |
+    v
+Suspicious Import
+```
+
+Then:
+
+```text
+FLOSS
+    |
+    v
+Suspicious String
+```
+
+Then:
+
+```text
+CAPA
+    |
+    v
+Network Capability
+```
+
+Then:
+
+```text
+Procmon / Process Explorer
+    |
+    v
+Runtime Activity
+```
+
+Then:
+
+```text
+Wireshark
+    |
+    v
+Network Destination
+```
+
+When multiple independent observations support the same behaviour, confidence in the analysis increases.
+
+---
+
+# 7. Tool Selection Cheat Sheet
+
+| Question                                       | Tool             |
+| ---------------------------------------------- | ---------------- |
+| Basic PE information?                          | PEStudio         |
+| What capabilities does the executable have?    | CAPA             |
+| Hidden/obfuscated strings?                     | FLOSS            |
+| Raw hexadecimal data?                          | HxD              |
+| Detailed PE structure?                         | CFF Explorer     |
+| Reverse engineering?                           | Ghidra           |
+| Dynamic debugging?                             | x64dbg           |
+| Processes / DLLs / parent-child relationships? | Process Explorer |
+| File / registry / process activity?            | Procmon          |
+| Network packets?                               | Wireshark        |
+| Simulated network services?                    | INetSim          |
+| Office/OLE stream analysis?                    | oledump          |
+| Memory image analysis?                         | Volatility       |
+| Network/service discovery?                     | Nmap             |
+| Startup/persistence investigation?             | Autoruns         |
+
+---
+
+# 8. REMnux vs FlareVM
+
+```text
+                    Malware Analysis
+                           |
+              +------------+------------+
+              |                         |
+              v                         v
+           REMnux                    FlareVM
+           Linux                     Windows
+              |                         |
+       +------+-------+           +-----+------+
+       |              |           |            |
+       v              v           v            v
+    oledump        INetSim     PEStudio      Procmon
+    Volatility     Network     FLOSS         ProcExp
+    Linux Tools    Analysis    Ghidra        HxD
+                               Wireshark
+```
+
+### REMnux
+
+Best understood as a Linux-based malware-analysis environment.
+
+### FlareVM
+
+Best understood as a Windows-based malware-analysis environment.
+
+They can complement each other in a broader analysis lab.
+
+---
+
+# 9. Important Investigation Principle — Correlation
+
+One of the most important lessons in malware analysis is:
+
+> **Do not make a final conclusion from a single indicator.**
+
+Example:
+
+```text
+Suspicious Import
+       |
+       v
+Interesting String
+       |
+       v
+CAPA Capability
+       |
+       v
+Runtime Process Activity
+       |
+       v
+Network Connection
+       |
+       v
+Memory / Code Evidence
+       |
+       v
+Correlated Conclusion
+```
+
+Each observation adds context.
+
+For example:
+
+```text
+Creates Process
+```
+
+alone is not necessarily malicious.
+
+But if the investigation also finds:
+
+```text
+Creates Process
++
+Suspicious PowerShell Command
++
+Downloads File
++
+Connects to Unusual Remote Endpoint
++
+Creates Persistence
+```
+
+the combined evidence provides much stronger grounds for further investigation.
+
+---
+
+# 10. Common Confusions
+
+## PID vs IP
+
+```text
+PID → Process ID
+IP  → Network Address
+```
+
+Example:
+
+```text
+PID = 4756
+IP  = 47.120.46.210
+```
+
+These are completely different concepts.
+
+---
+
+## PPID vs Remote IP
+
+```text
+PPID
+ |
+ +-- Parent Process ID
+```
+
+```text
+Remote IP
+ |
+ +-- Network Destination
+```
+
+---
+
+## Command Line vs Remote Address
+
+```text
+Command Line
+ |
+ +-- Executable path + arguments
+```
+
+```text
+Remote Address
+ |
+ +-- Network endpoint
+```
+
+---
+
+## Static vs Dynamic Analysis
+
+```text
+STATIC
+ |
+ +-- Don't intentionally execute
+ +-- Inspect file/code/properties
+```
+
+```text
+DYNAMIC
+ |
+ +-- Execute in controlled environment
+ +-- Observe behaviour
+```
+
+---
+
+## CAPA vs FLOSS
+
+```text
+CAPA
+ |
+ +-- What capabilities does the program appear to have?
+```
+
+```text
+FLOSS
+ |
+ +-- What strings can be extracted/recovered?
+```
+
+---
+
+## Procmon vs Process Explorer
+
+```text
+Process Explorer
+ |
+ +-- Process investigation
+```
+
+```text
+Procmon
+ |
+ +-- System activity monitoring
+```
+
+---
+
+## Hash vs Verdict
+
+```text
+Hash
+ |
+ +-- File identifier/fingerprint
+```
+
+Not:
+
+```text
+Hash
+ |
+ +-- Proof that file is malicious
+```
+
+---
+
+## Indicator vs Proof
+
+An IP address, suspicious import, filename, or CAPA capability is an **indicator**.
+
+It should be correlated with other evidence before reaching a conclusion.
+
+---
+
+# 11. Command Reference
+
+## CyberChef
+
+CyberChef is primarily GUI/web based, so its "commands" are operations/recipes:
+
+```text
+From Base64
+To Base64
+From Hex
+URL Decode
+ROT13
+XOR
+Find / Replace
+Extract URLs
+Extract IP Addresses
+Gunzip
+```
+
+---
+
+## CAPA
+
+```bash
+capa sample.exe
+```
+
+Help:
+
+```bash
+capa -h
+```
+
+---
+
+## oledump
+
+List/analyse streams:
+
+```bash
+oledump.py agenttesla.xlsm
+```
+
+Select stream:
+
+```bash
+oledump.py agenttesla.xlsm -s 4
+```
+
+Analyse/decompress VBA:
+
+```bash
+oledump.py agenttesla.xlsm -s 4 --vbadecompress
+```
+
+---
+
+## INetSim
+
+View configuration:
+
+```bash
+cat /etc/inetsim/inetsim.conf
+```
+
+Search configuration:
+
+```bash
+grep dns_default_ip /etc/inetsim/inetsim.conf
+```
+
+Start:
+
+```bash
+sudo inetsim
+```
+
+View reports:
+
+```bash
+sudo cat /var/log/inetsim/report/report.SESSION_ID.txt
+```
+
+---
+
+## wget
+
+Download from a lab HTTPS service:
+
+```bash
+sudo wget https://MACHINE_IP/second_payload.zip --no-check-certificate
+```
+
+Remember:
+
+```text
+--no-check-certificate
+→ Disables certificate verification
+```
+
+Use only when appropriate, such as a controlled lab using a self-signed certificate.
+
+---
+
+## FLOSS
+
+Change directory:
+
+```powershell
+cd C:\Users\Administrator\Desktop\Sample
+```
+
+Extract strings:
+
+```powershell
+FLOSS.exe .\windows.exe
+```
+
+Save output:
+
+```powershell
+FLOSS.exe .\windows.exe > windows.txt
+```
+
+---
+
+## Volatility 3
+
+Process list:
+
+```bash
+vol3 -f wcry.mem windows.pslist.PsList
+```
+
+Process tree:
+
+```bash
+vol3 -f wcry.mem windows.pstree.PsTree
+```
+
+DLL list:
+
+```bash
+vol3 -f wcry.mem windows.dlllist.DllList
+```
+
+Command lines:
+
+```bash
+vol3 -f wcry.mem windows.cmdline.CmdLine
+```
+
+File scan:
+
+```bash
+vol3 -f wcry.mem windows.filescan.FileScan
+```
+
+Potentially suspicious memory:
+
+```bash
+vol3 -f wcry.mem windows.malfind.Malfind
+```
+
+---
+
+## Nmap
+
+Basic host scan:
+
+```bash
+nmap <IP>
+```
+
+Example:
+
+```bash
+nmap 10.10.10.10
+```
+
+Only scan systems where you have authorization.
+
+---
+
+# 12. Important Terms
+
+| Term             | Meaning                                             |
+| ---------------- | --------------------------------------------------- |
+| Malware          | Malicious software                                  |
+| Static Analysis  | Analysis without intentionally executing the sample |
+| Dynamic Analysis | Analysis while observing execution                  |
+| PE               | Portable Executable                                 |
+| PID              | Process ID                                          |
+| PPID             | Parent Process ID                                   |
+| IOC              | Indicator of Compromise                             |
+| CAPA             | Capability identification tool                      |
+| FLOSS            | String extraction/deobfuscation tool                |
+| REMnux           | Linux malware-analysis environment                  |
+| FlareVM          | Windows malware-analysis environment                |
+| INetSim          | Internet services simulation suite                  |
+| Procmon          | System activity monitor                             |
+| Process Explorer | Process investigation tool                          |
+| Ghidra           | Reverse-engineering framework                       |
+| x64dbg           | Debugger                                            |
+| HxD              | Hex editor                                          |
+| CFF Explorer     | PE structure analysis tool                          |
+| Wireshark        | Network packet analyser                             |
+| Volatility       | Memory-forensics framework                          |
+| Nmap             | Network/service discovery tool                      |
+| Autoruns         | Startup/persistence investigation tool              |
+| oledump          | OLE/Office document analysis tool                   |
+
+---
+
+# 13. Final Memory Map
+
+When a suspicious executable is found:
+
+```text
+                       SAMPLE
+                          |
+                          v
+                    HASH / IDENTIFY
+                          |
+                          v
+                    STATIC TRIAGE
+                          |
+          +---------------+---------------+
+          |               |               |
+          v               v               v
+      PEStudio           CAPA           FLOSS
+          |               |               |
+       PE Info       Capabilities       Strings
+          |               |               |
+          +---------------+---------------+
+                          |
+                          v
+                   PE / Code Analysis
+                          |
+                    +-----+-----+
+                    |           |
+                    v           v
+                  Ghidra       HxD
+                    |
+                    v
+              Dynamic Analysis
+                    |
+          +---------+---------+---------+
+          |                   |         |
+          v                   v         v
+       Procmon          Process Exp.  Wireshark
+          |                   |         |
+       Files /             Process    Network
+       Registry             Tree      Traffic
+          |                   |         |
+          +-------------------+---------+
+                              |
+                              v
+                         Correlation
+                              |
+                              v
+                         Investigation
+                              |
+                              v
+                            Report
+```
+
+---
+
+# 14. Golden Rules
+
+### Rule 1 — Never trust one indicator
+
+```text
+One Indicator
+    ≠
+Final Conclusion
+```
+
+---
+
+### Rule 2 — Static and dynamic analysis complement each other
+
+```text
+Static
+  +
+Dynamic
+  +
+Network
+  +
+Memory
+  =
+Better Analysis
+```
+
+---
+
+### Rule 3 — Tool output requires interpretation
+
+A tool reports an observation.
+
+The analyst must determine:
+
+```text
+What does it mean?
+Is it normal?
+Is it suspicious?
+What additional evidence is needed?
+```
+
+---
+
+### Rule 4 — Suspicious does not automatically mean malicious
+
+Examples:
+
+```text
+Suspicious Import
+Suspicious String
+Network Connection
+PowerShell
+Encryption API
+Missing Rich Header
+```
+
+Any of these can occur in legitimate software.
+
+Context and correlation are essential.
+
+---
+
+### Rule 5 — Use isolated and authorized environments
+
+Malware samples should only be analysed in appropriately isolated environments where you are authorized to perform the analysis.
+
+---
+
+# 15. One-Line Revision
+
+```text
+CyberChef   → Decode / Transform / Extract
+
+CAPA       → Identify capabilities
+
+REMnux     → Linux malware-analysis environment
+
+INetSim    → Simulate network services
+
+oledump    → Analyse Office/OLE streams and VBA
+
+FlareVM    → Windows malware-analysis environment
+
+PEStudio   → Static PE triage
+
+FLOSS      → Extract / recover strings
+
+CFF Explorer → PE structure
+
+HxD        → Hex / binary inspection
+
+Ghidra     → Reverse engineering
+
+x64dbg     → Dynamic debugging
+
+Process Explorer → Process investigation
+
+Procmon    → System activity monitoring
+
+Wireshark  → Network packet analysis
+
+Volatility → Memory forensics
+
+Autoruns   → Startup / persistence investigation
+
+Nmap       → Network / service discovery
+```
+
+---
+
+# 16. Final Mental Model
+
+The complete topic can be reduced to:
+
+```text
+             MALWARE SAMPLE
+                    |
+                    v
+             IDENTIFY / HASH
+                    |
+                    v
+             STATIC ANALYSIS
+                    |
+       +------------+------------+
+       |            |            |
+       v            v            v
+    PEStudio       CAPA        FLOSS
+       |            |            |
+       +------------+------------+
+                    |
+                    v
+            REVERSE ENGINEERING
+                    |
+               Ghidra / HxD
+                    |
+                    v
+           CONTROLLED EXECUTION
+                    |
+       +------------+------------+
+       |            |            |
+       v            v            v
+    Procmon    Process Explorer Wireshark
+       |            |            |
+       +------------+------------+
+                    |
+                    v
+              MEMORY ANALYSIS
+                    |
+                Volatility
+                    |
+                    v
+               CORRELATION
+                    |
+                    v
+              INVESTIGATION
+                    |
+                    v
+                 REPORT
+```
+
+## Core Questions to Remember
+
+```text
+CAPA?
+→ What can this program potentially do?
+
+FLOSS?
+→ What strings can be extracted or recovered?
+
+PEStudio?
+→ What does the executable look like during initial triage?
+
+Ghidra?
+→ What does the code/logic look like?
+
+x64dbg?
+→ What happens while the program executes?
+
+Procmon?
+→ What system activity occurs?
+
+Process Explorer?
+→ What is the process doing and what is its relationship to other processes?
+
+Wireshark?
+→ What network communication occurs?
+
+Volatility?
+→ What evidence exists in memory?
+
+INetSim?
+→ Can network behaviour be observed in a controlled simulated environment?
+```
+
+**Core principle:**
+
+```text
+Observe
+   ↓
+Collect Evidence
+   ↓
+Correlate
+   ↓
+Interpret
+   ↓
+Document
+```
+
