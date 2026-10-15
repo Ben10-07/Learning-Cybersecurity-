@@ -1,0 +1,260 @@
+## 1. Viewing Page Source
+
+Page Source displays the original HTML document delivered to the browser. It can reveal how a webpage is structured and may expose useful information about the application.
+
+### Core Web Technologies
+
+| Technology | Purpose |
+|---|---|
+| HTML | Defines the structure and content of a webpage. |
+| CSS | Controls the appearance and layout of a webpage. |
+| JavaScript (JS) | Adds interactivity and dynamic behavior. |
+
+### What to Look for in Page Source
+
+- **HTML comments:** Written as `<!-- comment -->`. They are normally not displayed as webpage content but may be visible in the source.
+- **Hidden links:** URLs may exist in the HTML even when they are not directly visible on the page.
+- **Directory listing:** If directory listing is enabled on a server, visitors may be able to view filenames and, depending on permissions, access exposed files.
+- **Framework information:** Source code may reveal framework names, libraries, or version clues.
+- **Sensitive information:** Developers may accidentally expose internal paths, test data, or other information in client-side code.
+
+Finding an old framework version does not automatically prove that the application is vulnerable. Further verification is necessary.
+
+### How to View Page Source
+
+In most desktop browsers:
+
+1. Right-click the webpage.
+2. Select **View Page Source**.
+
+The keyboard shortcut varies by browser and operating system.
+
+**Security takeaway:** Anything delivered to the browser should generally be treated as potentially visible to the user. Sensitive information must not be protected merely by hiding it in HTML comments or JavaScript.
+
+## 2. Developer Tools — Inspector
+
+The Inspector allows developers and security testers to examine the browser's current Document Object Model (DOM) and CSS styles.
+
+### What Is the DOM?
+
+The **Document Object Model (DOM)** is the browser's structured representation of a webpage. JavaScript can modify the DOM after the original HTML has been loaded.
+
+### CSS Display Property
+
+```css
+display: block;
+```
+
+Displays an element as a block-level box, subject to its other styles and layout rules.
+
+```css
+display: none;
+```
+
+Hides the element and removes its box from the page layout.
+
+### Page Source vs. Inspector
+
+| Page Source | Inspector |
+|---|---|
+| Shows the original HTML source delivered to the browser. | Shows the current DOM and associated styles. |
+| May not reflect later JavaScript modifications. | Can show changes made by JavaScript. |
+| Useful for inspecting original markup and comments. | Useful for examining live elements, attributes, and CSS. |
+
+### TryHackMe Lab Example
+
+In the lab, the `premium-customer-blocker` element was modified by changing its CSS display property from `block` to `none`. This locally hid an overlay and revealed the flag underneath.
+
+The change affected the browser's presentation, not the server's authorization controls.
+
+**Important distinction:** Hiding an element in the browser is not equivalent to bypassing server-side authentication or authorization. A protected resource remains protected only if the server enforces the relevant access-control rules.
+
+Temporary Inspector changes may also disappear when the page is refreshed.
+
+## 3. Developer Tools — Debugger and Sources
+
+The Debugger allows developers and testers to inspect JavaScript and pause its execution at selected points.
+
+Browser terminology varies:
+
+- **Firefox:** Debugger.
+- **Chrome:** Sources.
+- Other browsers may use similar names.
+
+### Important Concepts
+
+**Minification:** Removes unnecessary whitespace and line breaks to reduce the size of source files. Minified code can be difficult to read.
+
+**Obfuscation:** Deliberately makes code harder to understand while generally preserving its intended behavior.
+
+**Pretty Print:** Reformats compact or minified code into a more readable layout. In Chrome DevTools, the `{ }` button commonly provides this feature.
+
+**Breakpoint:** A marker that pauses JavaScript execution when the selected point is reached.
+
+### JavaScript Example
+
+```javascript
+flash.remove();
+```
+
+This statement calls the `remove()` method on the object referenced by `flash`. If that object represents a DOM element, the method can remove the element from the document.
+
+The exact effect depends on what `flash` refers to and how the code is executed.
+
+### TryHackMe Lab Example
+
+In the contact-page lab:
+
+1. Open the relevant JavaScript file, `flash.min.js`.
+2. Use Pretty Print if the file is minified.
+3. Locate the relevant code.
+4. Set a breakpoint by clicking the line number.
+5. Refresh the page or trigger the relevant action.
+6. Inspect execution when it pauses.
+
+The breakpoint paused execution before the popup-removal code ran, allowing the lab flag to become visible.
+
+To remove a breakpoint, click its marker or the corresponding line number again.
+
+**Security takeaway:** Client-side JavaScript controls browser behavior, but it should not be the sole enforcement mechanism for sensitive operations or access permissions.
+
+## 4. Developer Tools — Network
+
+The Network panel records HTTP requests and responses made by the browser. It is particularly useful for understanding how a web application communicates with its server.
+
+### What Can Be Inspected?
+
+- Requested URLs and resources.
+- HTTP methods and status codes.
+- Request and response headers.
+- Request payloads and submitted form data.
+- Response bodies.
+- Timing information and resource-loading behavior.
+
+### Important Terms
+
+| Term | Meaning |
+|---|---|
+| Request | A message sent by a client to a server. |
+| Response | The server's reply to a request. |
+| Headers | Metadata describing a request or response. |
+| Payload | The data carried in a request or response. |
+| HTTP Method | Indicates the intended operation, such as GET or POST. |
+| Status Code | Indicates the general result of an HTTP request. |
+| AJAX | A technique for exchanging data with a server using JavaScript without requiring a full-page reload. |
+
+AJAX commonly uses APIs such as `XMLHttpRequest` or `fetch()`. It can exchange data without refreshing the entire webpage.
+
+### TryHackMe Lab Workflow
+
+1. Open Developer Tools and select the Network tab.
+2. Refresh the page to capture its initial requests.
+3. Fill in the contact form.
+4. Select **Send Message**.
+5. Locate the new request in the Network panel.
+6. Examine its request URL, method, headers, payload, and response.
+
+The exact field names and layout depend on the browser and application.
+
+### Security Testing Applications
+
+Network inspection can help investigate:
+
+- Unexpected request parameters.
+- Sensitive information sent in requests or returned in responses.
+- Authentication and session-handling behavior.
+- Access-control enforcement.
+- Insecure data transmission.
+- Unexpected API responses and error messages.
+
+A request or response should be interpreted in context. The presence of a parameter alone does not prove a vulnerability.
+
+## 5. Developer Tools — Storage
+
+The Storage panel allows inspection of data stored by a website in the browser.
+
+### Common Browser Storage Mechanisms
+
+| Storage Type | Purpose and Behavior |
+|---|---|
+| Local Storage | Stores key-value data that normally persists across browser sessions until removed. |
+| Session Storage | Stores key-value data associated with a browsing context, generally lasting for that tab's page session. |
+| Cookies | Store small pieces of data that may be sent with matching HTTP requests, depending on cookie attributes and browser rules. |
+| Cache Storage | Stores request-response resources, often for applications using service workers. |
+
+Browser storage is not automatically secure just because it is not immediately visible on the webpage. Its security depends on the data stored, the application's design, and the browser's security controls.
+
+### Cookie Security Attributes
+
+**HttpOnly**
+
+Prevents client-side JavaScript from reading the cookie through APIs such as `document.cookie`.
+
+It helps reduce the risk of cookie theft through certain XSS attacks, but it does not eliminate XSS or prevent every way an attacker might misuse an authenticated session.
+
+**Secure**
+
+Restricts the cookie to secure transport, normally HTTPS.
+
+**SameSite**
+
+Controls when browsers attach a cookie to requests associated with cross-site navigation or requests. Depending on the chosen value and application design, it can help reduce Cross-Site Request Forgery (CSRF) risk.
+
+Common values include `Strict`, `Lax`, and `None`. The `None` value generally requires `Secure`.
+
+### TryHackMe Lab Workflow
+
+1. Open the lab URL `/customers/signup`.
+2. Create a practice account using non-sensitive test information.
+3. Open Developer Tools.
+4. Select the Storage or Application panel, depending on the browser.
+5. Expand the website's origin or domain.
+6. Inspect Local Storage, Session Storage, and Cookies.
+7. Review what information the application stores and how it manages session-related data.
+
+Do not copy real passwords, session tokens, or other sensitive values into public notes or screenshots.
+
+### Security Testing Applications
+
+Storage inspection can help identify:
+
+- Sensitive information stored unnecessarily in the browser.
+- Session identifiers and cookie attributes.
+- Inappropriate use of Local Storage or Session Storage.
+- Client-side data that should not be trusted by the server.
+- Potential session-management weaknesses.
+
+**Important:** Client-side storage is controlled by the user's browser. Applications must not rely on stored client-side values alone to authorize sensitive actions.
+
+## 6. Quick Revision
+
+| Feature | Main Purpose |
+|---|---|
+| Page Source | Inspect the original HTML source. |
+| Inspector | Examine the live DOM and CSS. |
+| Debugger / Sources | Inspect JavaScript and pause execution. |
+| Pretty Print | Reformat minified code for readability. |
+| Breakpoint | Pause code execution at a selected point. |
+| Network | Inspect requests, payloads, headers, and responses. |
+| Storage | Examine browser-stored data and cookies. |
+| `HttpOnly` | Prevents JavaScript from reading a cookie through normal cookie APIs. |
+| `Secure` | Restricts cookie transmission to secure connections. |
+| `SameSite` | Controls cookie attachment in cross-site contexts. |
+| AJAX | Exchanges data with a server without a full-page reload. |
+| DOM | The browser's structured representation of the webpage. |
+
+## 7. Key Takeaways
+
+1. Page Source shows the original HTML, while the Inspector shows the current DOM and styles.
+2. JavaScript can modify webpage elements after the original HTML has loaded.
+3. Breakpoints help investigate when and why JavaScript executes particular statements.
+4. The Network panel reveals how the browser exchanges data with the server.
+5. The Storage panel helps investigate browser-side data storage and cookie configuration.
+6. Hiding an element in the browser does not prove that server-side access controls have been bypassed.
+7. `HttpOnly`, `Secure`, and `SameSite` serve different purposes and should be understood separately.
+8. Browser storage and client-side code must not be treated as trusted sources for authorization decisions.
+9. Inspecting a potential weakness is only the first step; security findings require validation in the authorized testing environment.
+
+## 8. Authorization and Responsible Use
+
+Perform security testing only on systems you own or have explicit permission to assess. Use the browser's Developer Tools to understand application behavior, validate findings carefully, and avoid collecting or publishing real users' sensitive information.
