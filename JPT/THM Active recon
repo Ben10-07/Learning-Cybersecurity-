@@ -1,0 +1,705 @@
+# Active Recon — Complete Notes
+
+## 1. Ping
+
+### Purpose
+
+`ping` ka use ye check karne ke liye hota hai ki target machine network par reachable hai ya nahi.
+
+### Syntax
+
+```bash
+ping MACHINE_IP
+```
+
+### Example
+
+```bash
+ping 10.10.10.10
+```
+
+### How it works
+
+`ping` commonly **ICMP Echo Request** bhejta hai aur target se **ICMP Echo Reply** expect karta hai.
+
+```text
+Your Machine
+     |
+     | ICMP Echo Request
+     v
+ Target Machine
+     |
+     | ICMP Echo Reply
+     v
+Your Machine
+```
+
+### Important
+
+- `ping` commonly ICMP use karta hai.
+- Reply milna generally indicate karta hai ki target reachable hai.
+- Reply na milne ka matlab automatically ye nahi hai ki machine down hai.
+- Firewall ya network configuration ICMP ko block kar sakti hai.
+
+### Remember
+
+```text
+Ping → Is the target reachable?
+```
+
+---
+
+# 2. Traceroute
+
+### Purpose
+
+`traceroute` ka use target tak packets ke **route / network hops** discover karne ke liye hota hai.
+
+### Linux
+
+```bash
+traceroute MACHINE_IP
+```
+
+### Example
+
+```bash
+traceroute 10.10.10.10
+```
+
+### Windows
+
+```cmd
+tracert MACHINE_IP
+```
+
+Example:
+
+```cmd
+tracert 10.10.10.10
+```
+
+---
+
+## How Traceroute Works
+
+Traceroute **TTL (Time To Live)** ko gradually increase karta hai.
+
+Concept:
+
+```text
+TTL 1 → Hop 1
+TTL 2 → Hop 2
+TTL 3 → Hop 3
+TTL 4 → Hop 4
+...
+        ↓
+      Target
+```
+
+### TTL
+
+TTL packet ke lifetime ko limit karta hai.
+
+Har router packet forward karte waqt TTL ko decrease karta hai.
+
+Agar TTL `0` ho jaye, router packet ko discard karke generally **ICMP Time Exceeded** response bhejta hai.
+
+Traceroute in responses ko use karke intermediate hops identify karta hai.
+
+---
+
+## Example
+
+```text
+Your Machine
+     |
+     v
+ Router 1
+     |
+     v
+ Router 2
+     |
+     v
+ Router 3
+     |
+     v
+ Target
+```
+
+Traceroute approximately ye reveal karne ki koshish karta hai:
+
+```text
+Hop 1 → Router 1
+Hop 2 → Router 2
+Hop 3 → Router 3
+Hop 4 → Target
+```
+
+---
+
+## `* * *` ka Meaning
+
+Output mein:
+
+```text
+* * *
+```
+
+dikh sakta hai.
+
+Iska generally matlab hai ki us probe ka expected response nahi mila.
+
+Possible reasons:
+
+- Router response nahi bhej raha
+- Firewall filtering
+- ICMP responses blocked
+- Rate limiting
+- Network behaviour
+
+Therefore:
+
+```text
+* * *
+≠
+Router definitely down
+```
+
+### Remember
+
+```text
+Traceroute → What route/hops are between me and the target?
+```
+
+---
+
+# 3. Telnet
+
+## What is Telnet?
+
+**TELNET = Teletype Network**
+
+Telnet originally remote systems ko command-line access provide karne ke liye designed tha.
+
+### Default Port
+
+```text
+23
+```
+
+Telnet communication **unencrypted/cleartext** hoti hai, isliye modern remote administration ke liye **SSH** preferred hai.
+
+---
+
+# 3.1 Telnet in Reconnaissance
+
+Pentesting labs mein Telnet ko ek simple **TCP client** ki tarah use karke kisi TCP port se connect kiya ja sakta hai.
+
+### Syntax
+
+```bash
+telnet MACHINE_IP PORT
+```
+
+### Example
+
+```bash
+telnet 10.10.10.10 80
+```
+
+Agar port par HTTP service hai, to manually HTTP request bhejne ki koshish kar sakte hain:
+
+```http
+GET / HTTP/1.1
+Host: example
+```
+
+HTTP request ko complete karne ke liye protocol ke according headers ke baad blank line bhi deni hoti hai.
+
+Server response mein kuch information mil sakti hai, for example:
+
+```text
+Server: nginx/1.6.2
+```
+
+Ye server software ke baare mein information provide kar sakta hai.
+
+---
+
+# 3.2 Common Ports
+
+| Port | Common Service |
+|---:|---|
+| 21 | FTP |
+| 23 | Telnet |
+| 25 | SMTP |
+| 80 | HTTP |
+
+Example:
+
+```bash
+telnet MACHINE_IP 21
+```
+
+Agar FTP server banner provide karta hai, to connection ke baad server information दिखाई दे sakti hai.
+
+---
+
+# 3.3 Important Telnet Concept
+
+Ye command:
+
+```bash
+telnet MACHINE_IP 80
+```
+
+iska matlab ye **nahi** hai ki Telnet service port `80` par chal rahi hai.
+
+Yahan:
+
+```text
+Telnet
+   ↓
+TCP client
+   ↓
+Port 80
+```
+
+Telnet sirf TCP connection establish karne ke liye client ki tarah use ho raha hai.
+
+Port `80` par actual service HTTP ho sakti hai.
+
+### Remember
+
+```text
+Telnet → TCP connection establish karke manually service se interact/banner grab kar sakte hain.
+```
+
+---
+
+# 4. Netcat — `nc`
+
+## What is Netcat?
+
+**Netcat (`nc`)** ek versatile networking utility hai jo TCP aur UDP communication ke saath kaam kar sakti hai.
+
+Netcat ke do important roles hain:
+
+```text
+Client
+  ↓
+Connect to a listening service
+
+Server / Listener
+  ↓
+Listen on a port
+```
+
+Isliye Netcat ko kabhi-kabhi:
+
+> **"Network Swiss Army Knife"**
+
+bhi kaha jata hai.
+
+---
+
+# 4.1 Netcat for Banner Grabbing
+
+### Syntax
+
+```bash
+nc MACHINE_IP PORT
+```
+
+### HTTP Example
+
+```bash
+nc MACHINE_IP 80
+```
+
+Uske baad manually HTTP request bhej sakte hain:
+
+```http
+GET / HTTP/1.1
+Host: example
+```
+
+Server response mein headers ya other service information mil sakti hai.
+
+---
+
+## FTP
+
+```bash
+nc MACHINE_IP 21
+```
+
+Agar FTP service banner provide karti hai, to connection ke baad banner mil sakta hai.
+
+---
+
+## SMTP
+
+```bash
+nc MACHINE_IP 25
+```
+
+SMTP server connection ke start mein greeting/banner provide kar sakta hai.
+
+---
+
+## Basic Flow
+
+```text
+nc
+ ↓
+TCP Connection
+ ↓
+Server
+ ↓
+Banner / Response
+ ↓
+Service Information
+```
+
+---
+
+# 4.2 Netcat as a Listener
+
+Netcat connection establish karne ke alawa **listening mode** mein bhi run ho sakta hai.
+
+### Listener
+
+```bash
+nc -vnlp 1234
+```
+
+### Client
+
+```bash
+nc MACHINE_IP 1234
+```
+
+Basic communication:
+
+```text
+Client                         Server
+  |                              |
+  |-------- text --------------->|
+  |<------- text ----------------|
+  |                              |
+```
+
+Dono sides par typed text doosri side tak send kiya ja sakta hai while the connection remains open.
+
+---
+
+# 4.3 Netcat Flags
+
+| Flag | Meaning |
+|---|---|
+| `-l` | Listen mode |
+| `-p` | Specify local port |
+| `-n` | Don't perform DNS resolution |
+| `-v` | Verbose output |
+| `-vv` | More verbose output |
+| `-k` | Keep listening after a client disconnects |
+| `-6` | Use IPv6 |
+
+---
+
+# 4.4 Common Listener Command
+
+```bash
+nc -vnlp 1234
+```
+
+Breakdown:
+
+```text
+-v
+↓
+Verbose output
+
+-n
+↓
+No DNS resolution
+
+-l
+↓
+Listen mode
+
+-p
+↓
+Specify local port
+
+1234
+↓
+Port number
+```
+
+So:
+
+```text
+nc -vnlp 1234
+```
+
+means approximately:
+
+> Run Netcat verbosely, without DNS resolution, in listening mode on port 1234.
+
+---
+
+# 4.5 IPv6 Listener
+
+Netcat ko IPv6 ke liye use kar sakte hain:
+
+```bash
+nc -6 -lp 1234
+```
+
+Here:
+
+```text
+-6
+↓
+IPv6
+
+-l
+↓
+Listen
+
+-p
+↓
+Specify port
+```
+
+---
+
+# 4.6 Netcat Client vs Listener
+
+### Client
+
+```bash
+nc MACHINE_IP PORT
+```
+
+Concept:
+
+```text
+Your Machine
+     |
+     | Connect
+     v
+Target / Server
+```
+
+### Listener
+
+```bash
+nc -vnlp PORT
+```
+
+Concept:
+
+```text
+Client
+  |
+  | Connect
+  v
+Your Netcat Listener
+```
+
+---
+
+# 5. Active Recon — Overall Flow
+
+Active reconnaissance involves directly interacting with the target or its services to gather information.
+
+A simplified learning flow:
+
+```text
+PING
+  |
+  v
+Is the target reachable?
+  |
+  v
+TRACEROUTE
+  |
+  v
+What route / hops exist?
+  |
+  v
+TELNET
+  |
+  v
+Can I establish a TCP connection?
+  |
+  v
+NETCAT
+  |
+  +---- Banner grabbing
+  |
+  +---- TCP communication
+  |
+  +---- UDP communication
+  |
+  +---- Listening
+```
+
+---
+
+# 6. Quick Comparison
+
+| Tool | Main Purpose |
+|---|---|
+| `ping` | Check basic network reachability |
+| `traceroute` / `tracert` | Discover route/hops |
+| `telnet` | TCP client / manual service interaction |
+| `nc` | TCP/UDP connections, listening, banner grabbing |
+
+---
+
+# 7. Most Important Commands
+
+### Ping
+
+```bash
+ping MACHINE_IP
+```
+
+### Linux Traceroute
+
+```bash
+traceroute MACHINE_IP
+```
+
+### Windows Traceroute
+
+```cmd
+tracert MACHINE_IP
+```
+
+### Telnet
+
+```bash
+telnet MACHINE_IP PORT
+```
+
+### Netcat — Client
+
+```bash
+nc MACHINE_IP PORT
+```
+
+### Netcat — Listener
+
+```bash
+nc -vnlp 1234
+```
+
+### Netcat — IPv6 Listener
+
+```bash
+nc -6 -lp 1234
+```
+
+---
+
+# 8. Important Concepts to Remember
+
+```text
+PING
+→ Reachability
+
+TRACEROUTE
+→ Route / Hops
+
+TELNET
+→ TCP Client / Manual Service Interaction
+
+NETCAT
+→ Connect + Listen + Network Communication
+```
+
+### Telnet Clarification
+
+```text
+telnet MACHINE_IP 80
+```
+
+does **not** mean:
+
+```text
+Telnet service = Port 80
+```
+
+It means:
+
+```text
+Telnet client
+      ↓
+TCP connection
+      ↓
+Port 80
+```
+
+---
+
+### Netcat Clarification
+
+```text
+nc MACHINE_IP 80
+```
+
+means Netcat is acting as a **client**.
+
+While:
+
+```bash
+nc -vnlp 1234
+```
+
+means Netcat is acting as a **listener**.
+
+---
+
+# 9. Final Memory Map
+
+```text
+             ACTIVE RECON
+                  |
+       +----------+----------+
+       |          |          |
+       v          v          v
+      PING    TRACEROUTE   TCP TOOLS
+       |          |          |
+       v          v          +----------+
+  Reachability   Route       |          |
+                             v          v
+                           Telnet      Netcat
+                             |          |
+                             v          +--------+
+                       TCP Client       |        |
+                             |          v        v
+                             |       Client   Listener
+                             |
+                             v
+                         Banner /
+                     Manual Interaction
+```
+
+## One-Line Revision
+
+```text
+Ping       → Target reachable?
+Traceroute → Target tak route kya hai?
+Telnet     → TCP connection bana kar service se manually interact
+Netcat     → Connect bhi, listen bhi, banner grabbing bhi
+```
+
+> **Active Recon = Target se directly interact karke information gather karna.**
+
+Only use these techniques against systems you own or are explicitly authorized to test.
