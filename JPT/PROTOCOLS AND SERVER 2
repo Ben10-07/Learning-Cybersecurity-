@@ -1,0 +1,481 @@
+# Sniffing, Man-in-the-Middle, TLS, SSH & Password Attacks
+
+## 1. Introduction
+
+Network attacks may exploit unencrypted communication, weaknesses in authentication, or insecure network configurations to expose sensitive information.
+
+This documentation covers the following topics:
+
+- Network sniffing
+- Man-in-the-Middle (MITM) attacks
+- Transport Layer Security (TLS)
+- Secure Shell (SSH)
+- Password attacks
+- Authentication-testing and password-recovery tools
+
+Understanding these concepts helps security professionals identify weaknesses and implement appropriate defensive controls.
+
+---
+
+## 2. Sniffing Attacks
+
+**Network sniffing** is the process of capturing and inspecting network traffic.
+
+Network administrators and security analysts use packet analysis to troubleshoot connections, investigate incidents, and detect suspicious activity. Attackers may also attempt to capture traffic to obtain sensitive information.
+
+### Potential Risks
+
+When traffic is transmitted without encryption, an observer with access to that traffic may be able to read information such as:
+
+- Usernames and passwords
+- Email messages
+- Session information
+- Other sensitive application data
+
+The information visible to an observer depends on the protocol, encryption, network configuration, and available access.
+
+### Common Tools
+
+| Tool | Purpose |
+|---|---|
+| Wireshark | Graphical network protocol and packet analysis |
+| tcpdump | Command-line packet capture and analysis |
+
+### Defensive Measures
+
+- Use HTTPS instead of HTTP.
+- Use SSH instead of Telnet.
+- Encrypt sensitive network communication.
+- Avoid transmitting credentials through unencrypted protocols.
+- Secure wireless networks and restrict unauthorized network access.
+
+**Key takeaway:** Sniffing is not inherently malicious; the purpose and authorization determine whether the activity is legitimate.
+
+---
+
+## 3. Man-in-the-Middle (MITM) Attacks
+
+A **Man-in-the-Middle attack** occurs when an attacker positions themselves between communicating parties and attempts to observe, relay, or modify their communication.
+
+### How It Works
+
+A simplified communication flow is:
+
+```text
+Client ←→ Attacker ←→ Server
+```
+
+Instead of communicating directly, the client and server may have their traffic intercepted or relayed through an attacker-controlled position.
+
+Depending on the circumstances, an attacker may attempt to:
+
+- Observe unencrypted information.
+- Modify communication.
+- Impersonate a communicating party.
+- Exploit weak or incorrectly configured encryption.
+- Abuse improperly validated certificates.
+
+Successfully intercepting encrypted communication does not automatically mean the attacker can decrypt it. Additional weaknesses or compromised endpoints may be required.
+
+### Defensive Measures
+
+- Use properly configured TLS.
+- Validate certificates and hostnames.
+- Never ignore certificate-validation errors without understanding their cause.
+- Secure Wi-Fi and network infrastructure.
+- Keep operating systems and applications updated.
+- Use appropriate network segmentation and access controls.
+
+**Key takeaway:** TLS and correct certificate validation help prevent attackers from successfully impersonating a server or reading protected communication.
+
+---
+
+## 4. Transport Layer Security (TLS)
+
+**Transport Layer Security (TLS)** is a cryptographic protocol that protects data transmitted between communicating endpoints.
+
+TLS provides:
+
+- **Confidentiality:** Helps prevent unauthorized parties from reading transmitted data.
+- **Integrity:** Helps detect unauthorized modification of transmitted data.
+- **Authentication:** Can verify the identity of a server through certificate validation.
+
+Client authentication can also be supported when appropriately configured.
+
+### Common Protocols and Ports
+
+| Protocol | Common port | Security characteristics |
+|---|---:|---|
+| HTTP | 80 | Normally unencrypted |
+| HTTPS | 443 | HTTP protected by TLS |
+| FTP | 21 | Traditional FTP control traffic may be unencrypted |
+| Implicit FTPS | 990 | Common port for FTP over implicit TLS |
+| IMAP | 143 | May support STARTTLS |
+| IMAPS | 993 | IMAP over implicit TLS |
+| POP3 | 110 | May support STARTTLS |
+| POP3S | 995 | POP3 over implicit TLS |
+| SMTP | 25 | Commonly used for server-to-server mail transfer; STARTTLS may be available |
+| SMTP submission | 587 | Commonly used for mail submission, often with STARTTLS |
+| SMTP over implicit TLS | 465 | Commonly used for TLS-protected mail submission |
+| SSH / SFTP | 22 | SSH provides encrypted remote access and supports SFTP |
+
+These are common port assignments, not guarantees of the protocol or security configuration actually running on a port.
+
+### STARTTLS vs. Implicit TLS
+
+**STARTTLS**
+
+The connection begins using the initial application protocol and is then upgraded to TLS if the server and client support and successfully negotiate the upgrade.
+
+**Implicit TLS**
+
+The connection begins with TLS immediately.
+
+For example:
+
+```text
+IMAP on port 143 → May use STARTTLS
+IMAPS on port 993 → TLS from the beginning
+```
+
+Correct configuration and certificate validation remain essential with both approaches.
+
+### HTTPS
+
+HTTPS is HTTP protected by TLS.
+
+```text
+HTTP  → Application data without TLS protection
+HTTPS → HTTP communication protected by TLS
+```
+
+HTTPS helps protect web traffic in transit, but it does not guarantee that a website itself is trustworthy or free of vulnerabilities.
+
+### Defensive Recommendations
+
+- Use supported, securely configured TLS versions.
+- Validate certificates and hostnames.
+- Disable obsolete protocols and weak cipher suites.
+- Avoid insecure fallback behavior.
+- Configure HTTPS correctly on web applications.
+
+**Key takeaway:** TLS protects communication in transit; it does not automatically protect compromised endpoints or insecure application logic.
+
+---
+
+## 5. Secure Shell (SSH)
+
+**Secure Shell (SSH)** is an encrypted protocol used for secure remote access and other network operations.
+
+### Key Facts
+
+- Default port: TCP 22
+- Provides encrypted remote terminal access.
+- Supports password-based and public-key authentication.
+- Supports secure file transfer through SFTP.
+- Is a secure alternative to traditional Telnet when properly configured.
+
+### SSH Authentication
+
+SSH commonly supports two authentication approaches.
+
+**Password authentication:** The user authenticates using a password.
+
+**Public-key authentication:** The client proves possession of the corresponding private key for a public key accepted by the server.
+
+The private key must remain protected. A passphrase can provide additional protection for a private key stored on disk.
+
+### Basic SSH Syntax
+
+```bash
+ssh username@HOST
+```
+
+To specify a private key:
+
+```bash
+ssh -i private_key username@HOST
+```
+
+These commands illustrate normal SSH usage. Use only accounts and systems you are authorized to access.
+
+### SSH Security Best Practices
+
+- Prefer strong public-key authentication where appropriate.
+- Protect private keys with suitable file permissions and passphrases.
+- Restrict access to authorized users.
+- Disable unnecessary authentication methods.
+- Keep SSH software updated.
+- Monitor authentication logs.
+- Use network restrictions where appropriate.
+
+**Key takeaway:** SSH provides secure remote access, commonly over TCP port 22.
+
+---
+
+## 6. Password Attacks
+
+Password attacks attempt to exploit weak passwords, reused credentials, exposed password data, or weaknesses in authentication controls.
+
+### 6.1 Password Guessing
+
+Password guessing uses information about a target or predictable password patterns to identify a password.
+
+Examples of weak password choices include common words, personal information, and predictable combinations.
+
+**Defenses:** Use long, unique passwords and avoid predictable personal information.
+
+### 6.2 Dictionary Attack
+
+A dictionary attack tests password candidates from a predefined list called a **wordlist**.
+
+The list may contain common passwords, words, or known password patterns.
+
+**Defenses:** Block common and compromised passwords, encourage unique passwords, and enable MFA.
+
+### 6.3 Brute-Force Attack
+
+A brute-force attack systematically tests possible password combinations.
+
+The search space depends on password length and the number of possible characters.
+
+**Defenses:** Use long passwords, authentication throttling, rate limiting, and MFA.
+
+### 6.4 Credential Stuffing
+
+Credential stuffing uses previously exposed username-password combinations to attempt authentication on other services.
+
+**Primary weakness:** Password reuse across accounts.
+
+**Defenses:**
+- Use a unique password for each account.
+- Enable MFA or passkeys.
+- Block known-compromised credentials.
+- Monitor suspicious login attempts.
+
+### 6.5 Password Spraying
+
+Password spraying tests a small number of common passwords against many accounts.
+
+This differs from repeatedly testing many passwords against a single account.
+
+**Defenses:**
+- Block weak and common passwords.
+- Monitor authentication failures across multiple accounts.
+- Apply suitable rate limits.
+- Enable MFA.
+
+### 6.6 Hybrid Attack
+
+A hybrid attack combines dictionary words with predictable modifications, such as appended numbers or years.
+
+It targets common patterns in how people create passwords.
+
+### Comparison Table
+
+| Attack | Main technique |
+|---|---|
+| Guessing | Uses target-related information or predictable patterns |
+| Dictionary | Tests candidates from a wordlist |
+| Brute force | Systematically tests possible combinations |
+| Credential stuffing | Reuses leaked credentials |
+| Password spraying | Tests a few passwords across many accounts |
+| Hybrid | Combines words with predictable modifications |
+
+---
+
+## 7. Wordlists
+
+A **wordlist** is a text file containing candidate usernames, passwords, or other values used in security testing.
+
+### Common Resources
+
+- **RockYou:** A widely used password wordlist derived from exposed password data.
+- **SecLists:** A collection of lists for security assessments, including usernames, passwords, and web-content discovery.
+- **CrackStation:** A password-recovery service and resource associated with password-hash lookup and cracking.
+
+### Common File Locations
+
+Some Kali Linux and TryHackMe environments may include:
+
+```text
+/usr/share/wordlists/rockyou.txt
+/usr/share/seclists/
+```
+
+These paths are environment-dependent. A wordlist may need to be installed or extracted before use.
+
+**Key takeaway:** Wordlists provide candidate values; their effectiveness depends on the quality of the candidates and the target password.
+
+---
+
+## 8. THC Hydra
+
+THC Hydra is a network authentication-testing tool that supports multiple services and authentication methods.
+
+Supported services may include SSH, FTP, IMAP, POP3, SMTP, and certain HTTP login methods.
+
+Hydra should only be used in authorized labs or assessments with explicit permission.
+
+### General Syntax
+
+```bash
+hydra [options] <target> <service>
+```
+
+Example using placeholders:
+
+```bash
+hydra -l <username> -P <wordlist> <lab-ip> ssh
+```
+
+This example illustrates the syntax. The target, account, and testing activity must be authorized.
+
+### Important Options
+
+| Option | Description |
+|---|---|
+| `-l` | Specifies a single username |
+| `-L` | Specifies a file containing usernames |
+| `-p` | Specifies a single password |
+| `-P` | Specifies a password wordlist |
+| `-s` | Specifies a custom service port |
+| `-V` | Displays individual attempts |
+| `-vV` | Provides more detailed verbose output |
+| `-t` | Configures the number of parallel tasks |
+| `-f` | Stops after a valid login is found, subject to service and target behavior |
+| `-d` | Enables debugging output |
+| `-w` | Configures the network response timeout |
+
+**Important option pairs:**
+
+```text
+-l → One username
+-L → Username list
+-p → One password
+-P → Password list
+```
+
+Exact options and behavior may vary with the Hydra version and service module.
+
+### What Hydra Does
+
+Hydra tests authentication against a live service through supported protocols.
+
+Its effectiveness depends on the service configuration, authentication mechanism, network conditions, and defensive controls.
+
+Hydra does not automatically bypass MFA, rate limits, or account-lockout policies.
+
+---
+
+## 9. Hydra vs. John the Ripper vs. Hashcat
+
+These tools address different password-testing workflows.
+
+| Tool | Primary purpose | Typical input |
+|---|---|---|
+| Hydra | Online authentication testing | Live network service |
+| John the Ripper | Password-hash auditing and recovery | Password hash file |
+| Hashcat | Password-hash auditing and recovery | Password hash file |
+
+### Online vs. Offline Testing
+
+**Online authentication testing** sends authentication attempts to a live service. Defensive controls such as rate limiting and account lockouts may affect the results.
+
+**Offline password-hash recovery** compares candidate passwords against stored password hashes without repeatedly authenticating to the original service.
+
+Offline recovery depends on the hash algorithm, password strength, candidate-generation strategy, and available computing resources.
+
+**Key distinction:** Hydra tests live authentication services; John the Ripper and Hashcat commonly perform offline password-hash recovery.
+
+---
+
+## 10. Other Authentication-Testing Tools
+
+| Tool | Primary use |
+|---|---|
+| Medusa | Network authentication testing |
+| Ncrack | Network authentication auditing |
+| NetExec | Windows network and Active Directory security assessments |
+| Burp Suite Intruder | Authorized web-request and authentication testing |
+| Wireshark | Network traffic analysis |
+| tcpdump | Command-line packet capture and analysis |
+
+Tool selection depends on the target technology, authentication protocol, and authorized assessment objective.
+
+---
+
+## 11. Defensive Best Practices
+
+### Password Security
+
+1. Use long, unique passwords.
+2. Use a reputable password manager.
+3. Block common and known-compromised passwords where possible.
+4. Enable MFA for important accounts.
+5. Consider passkeys or FIDO2 security keys for phishing-resistant authentication.
+6. Change compromised credentials promptly.
+
+### Authentication Controls
+
+1. Apply suitable login rate limits.
+2. Monitor repeated authentication failures.
+3. Detect suspicious login patterns.
+4. Configure account-lockout policies carefully.
+5. Review and remove unnecessary accounts.
+6. Restrict privileged accounts and administrative access.
+
+### Network Security
+
+1. Prefer HTTPS over HTTP.
+2. Prefer SSH over Telnet.
+3. Encrypt sensitive network communication.
+4. Configure TLS securely.
+5. Validate certificates correctly.
+6. Disable or restrict unnecessary cleartext services.
+7. Segment networks and restrict access to sensitive systems.
+
+### Monitoring
+
+Security teams should monitor for patterns such as:
+
+- Repeated failed logins.
+- Authentication failures across many accounts.
+- Successful logins following unusual failure patterns.
+- Logins from unexpected locations or devices.
+- Attempts to access privileged accounts.
+
+Individual events are not always malicious; they should be evaluated in context.
+
+---
+
+## 12. Quick Revision
+
+1. **Sniffing:** Capturing and inspecting network traffic.
+2. **MITM:** Intercepting, relaying, or attempting to modify communication between parties.
+3. **TLS:** Protects communication in transit through encryption and integrity mechanisms.
+4. **HTTPS:** HTTP protected by TLS.
+5. **SSH:** Encrypted remote-access protocol, commonly using TCP port 22.
+6. **Password guessing:** Uses target-related information or predictable patterns.
+7. **Dictionary attack:** Tests candidates from a predefined wordlist.
+8. **Brute force:** Systematically tests possible combinations.
+9. **Credential stuffing:** Reuses leaked credentials on other services.
+10. **Password spraying:** Tests a few passwords across many accounts.
+11. **Hybrid attack:** Combines words with predictable modifications.
+12. **Hydra:** Tests authentication against supported live services.
+13. **John the Ripper:** Commonly used for offline password-hash recovery.
+14. **Hashcat:** Password-hash recovery and auditing tool.
+15. **`-l` vs. `-L`:** Single username vs. username file.
+16. **`-p` vs. `-P`:** Single password vs. password file.
+17. **STARTTLS:** Upgrades a connection to TLS.
+18. **Implicit TLS:** Starts the connection using TLS.
+19. **SFTP:** An SSH-based file-transfer protocol.
+20. **Credential stuffing's main weakness:** Password reuse.
+
+---
+
+## Final Takeaway
+
+Network and authentication security requires more than a strong password. Encryption, correct certificate validation, unique credentials, MFA, rate limiting, monitoring, and secure service configuration work together to reduce risk.
+
+**Authorization rule:** Perform network and password testing only in authorized labs, on systems you own, or within an explicitly permitted security assessment.
