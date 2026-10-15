@@ -1,0 +1,1882 @@
+# CS101 — Module 10: Defensive Security, SOC, Digital Forensics, Incident Response & Log Fundamentals
+
+## 0. Module Overview
+
+Cybersecurity can broadly be divided into two major areas:
+
+```text
+                    Cybersecurity
+                         |
+              +----------+----------+
+              |                     |
+       Offensive Security     Defensive Security
+              |                     |
+        Attack / Test          Detect / Investigate
+              |                     |
+   Find vulnerabilities       Find suspicious activity
+              |                     |
+     Exploit in authorized    Respond / Recover
+          environments
+```
+
+### Defensive Security
+
+The primary objective of defensive security is to protect an organization's:
+
+* Systems
+* Networks
+* Applications
+* Users
+* Data
+
+from cyber threats by detecting, investigating, responding to, and recovering from security incidents.
+
+The major topics covered in this module are:
+
+```text
+Defensive Security
+       |
+       +---- SOC
+       |
+       +---- Digital Forensics
+       |
+       +---- Incident Response
+       |
+       +---- Logs & Log Analysis
+```
+
+---
+
+# Part 1 — Defensive Security Introduction
+
+## 1. What is Defensive Security?
+
+**Defensive Security** is the area of cybersecurity focused on protecting systems and organizations against cyber threats.
+
+Its major objectives include:
+
+* Detecting suspicious activity
+* Investigating security events
+* Responding to incidents
+* Protecting systems and data
+* Recovering affected systems
+* Improving security controls after incidents
+
+### Offensive vs Defensive Security
+
+| Offensive Security                                  | Defensive Security                |
+| --------------------------------------------------- | --------------------------------- |
+| Attacker perspective                                | Defender perspective              |
+| Finds vulnerabilities                               | Detects threats                   |
+| Performs authorized testing                         | Monitors security activity        |
+| Exploits vulnerabilities in authorized environments | Investigates suspicious activity  |
+| Helps identify weaknesses                           | Helps protect and recover systems |
+
+### Example
+
+Suppose an attacker attempts unauthorized access to a server.
+
+A defensive workflow may look like:
+
+```text
+Login Attempt
+      ↓
+Log Generated
+      ↓
+Security Tool Detects Activity
+      ↓
+Alert
+      ↓
+SOC Investigation
+      ↓
+Determine Whether Threat Exists
+      ↓
+Response
+```
+
+---
+
+## 2. What Does Defensive Security Protect?
+
+### Systems
+
+* Servers
+* Workstations
+* Laptops
+* Endpoints
+
+### Networks
+
+* Routers
+* Switches
+* Firewalls
+* Network traffic
+
+### Applications
+
+* Websites
+* APIs
+* Internal applications
+* Business applications
+
+### Data
+
+* Customer information
+* Credentials
+* Business data
+* Confidential files
+
+### Users
+
+* Employees
+* Administrators
+* Customers
+
+---
+
+# Part 2 — Security Operations Center (SOC)
+
+## 3. What is a SOC?
+
+**SOC = Security Operations Center**
+
+A Security Operations Center is a centralized security function that monitors an organization's environment and helps detect, investigate, and respond to security incidents.
+
+A simplified SOC model:
+
+```text
+                  ORGANIZATION
+                       |
+              +------------------+
+              |       SOC        |
+              |                  |
+              |    Monitor       |
+              |    Detect        |
+              |    Investigate   |
+              |    Respond       |
+              +------------------+
+```
+
+### Primary Focus
+
+```text
+Detection + Investigation + Response
+```
+
+---
+
+## 4. What Can a SOC Detect?
+
+A SOC may detect activities such as:
+
+* Unauthorized login attempts
+* Malware activity
+* Suspicious network traffic
+* Data exfiltration
+* Account compromise
+* Policy violations
+* Intrusion attempts
+* Abnormal user activity
+* Security incidents
+
+Detection depends on the organization's security controls, telemetry, detection rules, and available data.
+
+---
+
+# 5. Three Pillars of a SOC
+
+A useful framework for understanding a SOC is:
+
+```text
+PEOPLE + PROCESS + TECHNOLOGY
+```
+
+## A. People
+
+A SOC requires security professionals with different responsibilities.
+
+### L1 Analyst — Level 1
+
+The L1 analyst is generally the first level of alert handling.
+
+Responsibilities may include:
+
+* Monitoring alerts
+* Initial investigation
+* Alert triage
+* Identifying false positives
+* Identifying potential true positives
+* Escalating serious alerts
+
+### L2 Analyst — Level 2
+
+L2 analysts generally perform deeper investigations.
+
+Responsibilities may include:
+
+* Analysing multiple logs
+* Correlating events
+* Investigating suspicious activity
+* Determining incident scope
+* Performing more detailed analysis
+
+### L3 Analyst — Level 3
+
+L3 analysts typically handle more advanced security investigations.
+
+Responsibilities may include:
+
+* Threat hunting
+* Advanced incident investigation
+* Complex attack analysis
+* Supporting incident response
+* Developing deeper technical findings
+
+### Security Engineer
+
+A security engineer may design, configure, deploy, and maintain security infrastructure and security tools.
+
+### Detection Engineer
+
+A detection engineer develops and maintains security detection rules.
+
+Example:
+
+```text
+IF:
+    Multiple failed logins
+    +
+    Same account
+    +
+    Short time period
+
+THEN:
+    Generate suspicious-login alert
+```
+
+### SOC Manager
+
+A SOC manager oversees SOC operations, processes, personnel, and overall security monitoring activities.
+
+---
+
+# 6. SOC Process
+
+A simplified SOC workflow is:
+
+```text
+Monitor
+   ↓
+Alert
+   ↓
+Triage
+   ↓
+Investigate
+   ↓
+Determine Impact
+   ↓
+Respond
+   ↓
+Document
+```
+
+---
+
+## Alert Triage
+
+**Triage** means evaluating an alert to determine its importance, context, and whether further investigation is required.
+
+A useful investigation framework is the **5Ws**:
+
+```text
+What?
+When?
+Where?
+Who?
+Why?
+```
+
+### Example
+
+Suppose a suspicious login alert is generated.
+
+**What?**
+
+What activity occurred?
+
+**When?**
+
+When did the activity happen?
+
+**Where?**
+
+Which system and source IP were involved?
+
+**Who?**
+
+Which user account was involved?
+
+**Why?**
+
+Why is the activity considered suspicious?
+
+---
+
+# 7. False Positive vs True Positive
+
+## False Positive
+
+A security alert is generated, but investigation determines that there is no actual security threat.
+
+```text
+Alert
+  ↓
+Investigation
+  ↓
+No Actual Threat
+  ↓
+False Positive
+```
+
+Example:
+
+An employee logs in from an unusual location because they are travelling for legitimate business purposes.
+
+---
+
+## True Positive
+
+An alert is generated and investigation confirms that the detected activity is genuinely suspicious or malicious.
+
+```text
+Alert
+  ↓
+Investigation
+  ↓
+Actual Threat Confirmed
+  ↓
+True Positive
+```
+
+A confirmed malicious event may subsequently be handled as a security incident depending on its impact and organizational procedures.
+
+---
+
+# 8. SOC Technologies
+
+| Technology | Primary Purpose                                  |
+| ---------- | ------------------------------------------------ |
+| SIEM       | Centralized log/event collection and correlation |
+| EDR        | Endpoint monitoring and detection/response       |
+| Firewall   | Network traffic control                          |
+| Antivirus  | Malware detection/prevention                     |
+| IDS        | Intrusion detection                              |
+| IPS        | Intrusion prevention                             |
+| XDR        | Correlation across multiple security sources     |
+| SOAR       | Security workflow and response automation        |
+
+---
+
+## SIEM
+
+**SIEM = Security Information and Event Management**
+
+A SIEM collects security-related logs and events from multiple sources and provides centralized analysis, correlation, and alerting.
+
+Example:
+
+```text
+Server --------\
+Computer -------\
+Firewall --------> SIEM
+Application -----/
+Network --------/
+                  |
+                  ↓
+                Alert
+```
+
+### Memory
+
+```text
+SIEM → Logs + Events
+```
+
+---
+
+## EDR
+
+**EDR = Endpoint Detection and Response**
+
+An endpoint is an individual device such as:
+
+* Laptop
+* Desktop
+* Server
+
+EDR monitors endpoint activity and helps detect and respond to suspicious or malicious activity.
+
+### Memory
+
+```text
+EDR → Endpoint
+```
+
+---
+
+## Firewall
+
+A firewall controls network traffic according to configured rules.
+
+### Memory
+
+```text
+Firewall → Network Traffic
+```
+
+---
+
+# Part 3 — Digital Forensics
+
+# 9. What is Forensics?
+
+**Forensics** refers to the systematic application of methods used to collect, preserve, examine, and analyse evidence.
+
+---
+
+# 10. What is Digital Forensics?
+
+**Digital Forensics** is the process of collecting, preserving, examining, and analysing evidence from digital devices and systems.
+
+It can support:
+
+* Cybersecurity investigations
+* Incident investigations
+* Cybercrime investigations
+* Internal investigations
+* Evidence preservation
+
+Potential evidence sources include:
+
+* Computers
+* Mobile devices
+* Hard drives
+* USB devices
+* Network traffic
+* Databases
+* Cloud environments
+* Emails
+
+---
+
+# 11. Digital Forensics Process
+
+A commonly taught four-stage forensic process is:
+
+```text
+Collection
+    ↓
+Examination
+    ↓
+Analysis
+    ↓
+Reporting
+```
+
+## 11.1 Collection
+
+Identify and collect relevant evidence.
+
+Examples:
+
+* Laptop
+* Hard drive
+* USB device
+* RAM
+* Network evidence
+
+Evidence collection should be carefully documented and performed in a way that preserves its integrity.
+
+---
+
+## 11.2 Examination
+
+Collected data can be extremely large.
+
+During examination, investigators may:
+
+* Filter data
+* Identify relevant files
+* Extract useful information
+* Organize evidence
+
+---
+
+## 11.3 Analysis
+
+The investigator correlates evidence to determine what happened.
+
+Example:
+
+```text
+Login
+  ↓
+Suspicious Process
+  ↓
+File Access
+  ↓
+Data Transfer
+```
+
+This can help reconstruct an event timeline.
+
+---
+
+## 11.4 Reporting
+
+The investigation findings are documented.
+
+A forensic report may include:
+
+* Methodology
+* Evidence
+* Findings
+* Timeline
+* Analysis
+* Recommendations
+
+### Executive Summary
+
+An **Executive Summary** provides a short, understandable overview of important findings for non-technical management or stakeholders.
+
+---
+
+# 12. Types of Digital Forensics
+
+## Computer Forensics
+
+Investigation of computers, storage devices, files, and operating-system artifacts.
+
+## Mobile Forensics
+
+Investigation of mobile devices and their associated data.
+
+## Network Forensics
+
+Analysis of network traffic, connections, and network-related evidence.
+
+## Database Forensics
+
+Investigation of database activity, changes, and stored data.
+
+## Cloud Forensics
+
+Investigation of cloud-based systems, services, accounts, and activity.
+
+## Email Forensics
+
+Analysis of emails, headers, attachments, and related evidence.
+
+---
+
+# 13. Evidence Acquisition
+
+## Authorization
+
+**Authorization** means having appropriate legal or organizational permission to collect and examine evidence.
+
+Evidence should not be collected without appropriate authority.
+
+---
+
+## Chain of Custody
+
+**Chain of Custody** is the documented history of evidence handling.
+
+It can record:
+
+```text
+What is the evidence?
+       ↓
+Who collected it?
+       ↓
+When was it collected?
+       ↓
+Where was it stored?
+       ↓
+Who accessed it?
+       ↓
+When was it transferred?
+```
+
+### Purpose
+
+The chain of custody helps demonstrate that evidence was properly handled and its integrity was maintained.
+
+---
+
+# 14. Write Blocker
+
+A **Write Blocker** is a hardware or software mechanism used to prevent unintended modifications to the original storage media during forensic acquisition.
+
+Conceptually:
+
+```text
+Original Disk
+      ↓
+Write Blocker
+      ↓
+Forensic System
+```
+
+The goal is to read the original evidence without writing changes back to it.
+
+---
+
+# 15. Forensic Images
+
+## Forensic Image
+
+A forensic image is a copy of storage media intended to preserve the data for forensic examination.
+
+A forensic acquisition can contain data beyond ordinary user-visible files, depending on the acquisition method.
+
+### Disk Image
+
+A forensic copy of non-volatile storage such as:
+
+* HDD
+* SSD
+* USB storage
+
+### Memory Image
+
+A captured representation of RAM at a particular point in time.
+
+RAM is **volatile memory**, meaning its contents can be lost when power is removed.
+
+---
+
+# 16. Digital Forensics Tools
+
+| Tool       | Common Use                       |
+| ---------- | -------------------------------- |
+| FTK Imager | Disk acquisition and examination |
+| Autopsy    | Digital forensic analysis        |
+| DumpIt     | Memory acquisition               |
+| Volatility | Memory/RAM analysis              |
+
+### Memory Trick
+
+```text
+FTK Imager → Disk Acquisition
+Autopsy → Disk Analysis
+DumpIt → RAM Acquisition
+Volatility → RAM Analysis
+```
+
+---
+
+# 17. Metadata
+
+**Metadata = Data about Data**
+
+Metadata provides information describing a file or object.
+
+For example, image metadata may contain:
+
+* Camera information
+* Date
+* Time
+* GPS information
+* Device information
+
+---
+
+## PDF Metadata
+
+The `pdfinfo` command can display metadata about a PDF:
+
+```bash
+pdfinfo DOCUMENT.pdf
+```
+
+---
+
+## EXIF
+
+**EXIF = Exchangeable Image File Format**
+
+EXIF is associated with metadata commonly stored in image files.
+
+`exiftool` can display metadata from many file types.
+
+```bash
+exiftool IMAGE.jpg
+```
+
+To search for a specific field or value:
+
+```bash
+exiftool letter-image.jpg | grep Street
+```
+
+### Command Breakdown
+
+```text
+exiftool letter-image.jpg
+        ↓
+Generate metadata output
+
+|
+        ↓
+Pipe output to another command
+
+grep Street
+        ↓
+Search for "Street"
+```
+
+---
+
+# Part 4 — Incident Response
+
+# 18. What is a Security Incident?
+
+A **security incident** is a security-related event or activity that may compromise or threaten the confidentiality, integrity, or availability of systems, data, or operations.
+
+Not every alert is automatically an incident.
+
+A simplified relationship is:
+
+```text
+Event
+  ↓
+Alert
+  ↓
+Investigation
+  ↓
+Confirmed Security Issue?
+  ↓
+Incident
+```
+
+The exact classification depends on the organization's policies and incident criteria.
+
+---
+
+# 19. Common Incident Types
+
+## Malware Infection
+
+Malicious software executes or becomes present on a system.
+
+Examples include:
+
+* Trojans
+* Ransomware
+* Worms
+* Other malicious software
+
+---
+
+## Security Breach
+
+Unauthorized access to systems, resources, or confidential information.
+
+---
+
+## Data Leak
+
+Confidential or sensitive information becomes exposed to unauthorized parties.
+
+Possible causes include:
+
+* Intentional disclosure
+* Accidental disclosure
+* Misconfiguration
+
+---
+
+## Insider Attack
+
+Malicious or unauthorized activity performed by someone with legitimate organizational access.
+
+---
+
+## DoS
+
+**DoS = Denial of Service**
+
+A DoS attack attempts to make a system or service unavailable by exhausting or disrupting resources.
+
+The primary security objective affected is:
+
+```text
+Availability
+```
+
+---
+
+# 20. Incident Severity
+
+Organizations commonly classify incidents using levels such as:
+
+```text
+Low
+Medium
+High
+Critical
+```
+
+Severity is determined according to factors such as:
+
+* Business impact
+* Number of affected systems
+* Data sensitivity
+* Scope
+* Operational disruption
+* Potential consequences
+
+### Important
+
+```text
+Incident Type ≠ Incident Severity
+```
+
+The same type of incident can have different severity depending on its context and impact.
+
+---
+
+# 21. SANS Incident Response Framework
+
+A commonly taught SANS incident response lifecycle is **PICERL**:
+
+```text
+P → Preparation
+I → Identification
+C → Containment
+E → Eradication
+R → Recovery
+L → Lessons Learned
+```
+
+---
+
+## P — Preparation
+
+Prepare the organization before an incident occurs.
+
+This can include:
+
+* Security teams
+* Tools
+* Procedures
+* Resources
+* Training
+* Communication processes
+
+---
+
+## I — Identification
+
+Detect and identify suspicious activity.
+
+Main question:
+
+> Did an actual security incident occur?
+
+---
+
+## C — Containment
+
+Limit the impact and prevent further spread.
+
+Possible actions include:
+
+* Isolating a compromised system
+* Disabling a compromised account
+* Blocking malicious communication
+* Preventing further propagation
+
+---
+
+## E — Eradication
+
+Remove the cause of the incident.
+
+Example:
+
+```text
+Malware
+   ↓
+Identify
+   ↓
+Remove
+```
+
+Eradication may also involve removing persistence mechanisms and addressing the vulnerability or misconfiguration that enabled the incident.
+
+---
+
+## R — Recovery
+
+Restore affected systems to normal operation.
+
+Possible activities:
+
+* Restore systems
+* Rebuild systems
+* Test functionality
+* Monitor systems
+* Verify that the threat has been removed
+
+---
+
+## L — Lessons Learned
+
+Review the incident after recovery.
+
+Questions include:
+
+* What happened?
+* What was the root cause?
+* What worked?
+* What failed?
+* Which security gaps existed?
+* What should be improved?
+
+---
+
+# 22. NIST Incident Response
+
+A commonly referenced NIST incident response lifecycle can be summarized as:
+
+```text
+Preparation
+      ↓
+Detection & Analysis
+      ↓
+Containment, Eradication & Recovery
+      ↓
+Post-Incident Activity
+```
+
+### Comparison
+
+**SANS:**
+
+```text
+Preparation
+    ↓
+Identification
+    ↓
+Containment
+    ↓
+Eradication
+    ↓
+Recovery
+    ↓
+Lessons Learned
+```
+
+**NIST:**
+
+```text
+Preparation
+    ↓
+Detection & Analysis
+    ↓
+Containment / Eradication / Recovery
+    ↓
+Post-Incident Activity
+```
+
+The frameworks use different terminology and grouping, but both describe structured incident response activities.
+
+---
+
+# 23. Incident Response Plan
+
+**IRP = Incident Response Plan**
+
+An Incident Response Plan is a formal document that defines how an organization prepares for, handles, communicates, and recovers from security incidents.
+
+Important components include:
+
+## Roles & Responsibilities
+
+Defines who is responsible for each activity.
+
+## Incident Response Methodology
+
+Defines the organization's investigation and response process.
+
+## Communication Plan
+
+Defines who should be informed and how communication should occur.
+
+Potential stakeholders include:
+
+* Security team
+* Management
+* Relevant business teams
+* External stakeholders where appropriate
+* Relevant authorities where legally required
+
+## Escalation Path
+
+Defines how serious incidents are escalated to appropriate personnel or teams.
+
+---
+
+# 24. Playbook vs Runbook
+
+## Playbook
+
+A **Playbook** describes **WHAT should be done** during a particular type of incident.
+
+Example — Phishing Response:
+
+```text
+Notify
+   ↓
+Analyse Email
+   ↓
+Check Attachment / Link
+   ↓
+Identify Affected Users
+   ↓
+Isolate Affected Systems if Required
+   ↓
+Block Malicious Indicators
+```
+
+---
+
+## Runbook
+
+A **Runbook** provides detailed instructions for **HOW a specific action should be performed**.
+
+### Memory Rule
+
+```text
+PLAYBOOK = WHAT
+RUNBOOK  = HOW
+```
+
+---
+
+# Part 5 — Log Fundamentals
+
+# 25. What is a Log?
+
+A **log** is a recorded representation of activity generated by a system, application, service, or network device.
+
+Examples:
+
+```text
+Login
+File Access
+Network Connection
+Application Error
+Web Request
+Account Change
+```
+
+Logs can be thought of as **digital footprints** that help investigators understand what happened.
+
+---
+
+# 26. Why Are Logs Important?
+
+## Security Monitoring
+
+Logs can help identify suspicious activity.
+
+## Incident Investigation
+
+Logs can help determine what happened during an incident.
+
+## Digital Forensics
+
+Logs can provide evidence and help reconstruct timelines.
+
+## Troubleshooting
+
+Logs help identify errors and system problems.
+
+## Performance Monitoring
+
+Logs can provide information about application and system behaviour.
+
+## Auditing & Compliance
+
+Logs provide records of activities that may be required for auditing or regulatory purposes.
+
+---
+
+# 27. Types of Logs
+
+## System Logs
+
+Record operating-system activity such as:
+
+* Startup
+* Shutdown
+* Drivers
+* Hardware events
+* Errors
+* Services
+
+---
+
+## Security Logs
+
+Record security-related activity such as:
+
+* Authentication
+* Authorization
+* Account changes
+* Policy changes
+* Security events
+
+---
+
+## Application Logs
+
+Record application activity such as:
+
+* User interactions
+* Errors
+* Updates
+* Application changes
+* Compatibility issues
+
+---
+
+## Audit Logs
+
+Record activities relevant to auditing and accountability, such as:
+
+* User changes
+* Data access
+* Policy enforcement
+* Security monitoring
+
+---
+
+## Network Logs
+
+Record network activity such as:
+
+* Incoming traffic
+* Outgoing traffic
+* Connections
+* Firewall events
+
+---
+
+## Access Logs
+
+Record access to resources such as:
+
+* Web servers
+* Databases
+* Applications
+* APIs
+
+---
+
+# 28. Windows Event Logs
+
+Windows maintains several important event log categories.
+
+The commonly encountered categories include:
+
+```text
+Application
+System
+Security
+```
+
+---
+
+## Application
+
+Contains events generated by applications, including errors and warnings.
+
+---
+
+## System
+
+Contains operating-system-related events, including:
+
+* Drivers
+* Services
+* Startup
+* Shutdown
+* System errors
+
+---
+
+## Security
+
+Contains security-related events such as:
+
+* Successful logons
+* Failed logons
+* Account creation
+* Account changes
+* Policy-related activity
+
+---
+
+# 29. Windows Event Viewer
+
+**Event Viewer** is a built-in Windows graphical interface for viewing and filtering event logs.
+
+Basic navigation:
+
+```text
+Start
+  ↓
+Event Viewer
+  ↓
+Windows Logs
+  ↓
+Application / Security / System
+```
+
+---
+
+# 30. Important Event Fields
+
+### Description
+
+Provides information about what activity occurred.
+
+### Log Name
+
+Shows the category in which the event was recorded.
+
+### Logged
+
+Shows the time associated with the event.
+
+### Event ID
+
+A numeric identifier associated with a particular event type.
+
+---
+
+# 31. Important Windows Event IDs
+
+| Event ID | Meaning                              |
+| -------: | ------------------------------------ |
+| **4624** | Successful logon                     |
+| **4625** | Failed logon                         |
+| **4634** | Logoff                               |
+| **4720** | User account created                 |
+| **4722** | User account enabled                 |
+| **4724** | Attempt to reset an account password |
+| **4725** | User account disabled                |
+| **4726** | User account deleted                 |
+
+### Must Remember
+
+```text
+4624 = SUCCESSFUL LOGON
+4625 = FAILED LOGON
+4634 = LOGOFF
+
+4720 = USER CREATED
+4724 = PASSWORD RESET ATTEMPT
+
+4722 = ACCOUNT ENABLED
+4725 = ACCOUNT DISABLED
+4726 = ACCOUNT DELETED
+```
+
+---
+
+# 32. Investigating a Successful Login
+
+To investigate successful logons:
+
+```text
+Event Viewer
+    ↓
+Windows Logs
+    ↓
+Security
+    ↓
+Filter Current Log
+    ↓
+Event ID 4624
+```
+
+Useful fields inside the event can include:
+
+### Account Name
+
+The account associated with the logon.
+
+### Logged
+
+The time of the event.
+
+### Source Network Address
+
+The network address associated with the logon, when available.
+
+### Logon Type
+
+Provides information about the type of logon.
+
+---
+
+# 33. Investigating Account Creation
+
+Question:
+
+> Which user account was recently created?
+
+Workflow:
+
+```text
+Security Log
+     ↓
+Event ID 4720
+     ↓
+Find relevant/latest event
+     ↓
+Inspect New Account
+     ↓
+Account Name
+```
+
+### Key Point
+
+```text
+4720 = Account Creation
+```
+
+---
+
+# 34. Investigating Password Reset Activity
+
+Question:
+
+> Was an account involved in a password reset attempt?
+
+Check:
+
+```text
+Security Log
+     ↓
+Event ID 4724
+     ↓
+Inspect Target / Account Information
+```
+
+### Key Point
+
+```text
+4724 = Attempt to Reset an Account Password
+```
+
+When investigating, make sure the account in the event matches the account being investigated.
+
+---
+
+# Part 6 — Apache Web Access Logs
+
+# 35. Apache Access Logs
+
+Apache web servers record HTTP requests in access logs.
+
+A THM lab may provide a log such as:
+
+```text
+/root/Rooms/logs/access.log
+```
+
+A common Apache access-log location on Debian/Ubuntu-based systems is:
+
+```text
+/var/log/apache2/access.log
+```
+
+The exact location can vary depending on the operating system and configuration.
+
+---
+
+# 36. Apache Access Log Example
+
+Example:
+
+```text
+172.16.0.1 - - [06/Jun/2024:13:58:44] "GET /products HTTP/1.1" 404 "-" "Mozilla/5.0..."
+```
+
+Breakdown:
+
+```text
+172.16.0.1
+     ↓
+Source IP Address
+
+[06/Jun/2024:13:58:44]
+     ↓
+Timestamp
+
+GET
+     ↓
+HTTP Method
+
+/products
+     ↓
+Requested Path
+
+HTTP/1.1
+     ↓
+HTTP Version
+
+404
+     ↓
+HTTP Status Code
+
+Mozilla/5.0...
+     ↓
+User-Agent
+```
+
+---
+
+# 37. HTTP Methods
+
+## GET
+
+Used to request/retrieve a resource.
+
+## POST
+
+Used to submit data to a server.
+
+Common examples include:
+
+* Login forms
+* Form submissions
+* Data submissions
+
+## PUT
+
+Commonly used to create or replace/update a resource.
+
+## DELETE
+
+Used to request deletion of a resource.
+
+---
+
+# 38. HTTP Status Codes
+
+Important examples:
+
+```text
+200 → OK / Successful response
+404 → Not Found
+500 → Internal Server Error
+```
+
+Status codes are grouped into classes:
+
+```text
+1xx → Informational
+2xx → Success
+3xx → Redirection
+4xx → Client-side errors
+5xx → Server-side errors
+```
+
+---
+
+# 39. `cat`
+
+`cat` can display file contents.
+
+```bash
+cat access.log
+```
+
+Multiple files can also be combined:
+
+```bash
+cat access1.log access2.log > combined_access.log
+```
+
+The `>` operator redirects the command output into the specified file.
+
+---
+
+# 40. `grep`
+
+`grep` searches text for matching patterns.
+
+### Search for an IP
+
+```bash
+grep "192.168.1.1" access.log
+```
+
+### Find POST requests
+
+```bash
+grep "POST" access.log
+```
+
+### Filter by IP and HTTP method
+
+```bash
+grep "172.16.0.1" access.log | grep "POST"
+```
+
+This means:
+
+```text
+access.log
+    ↓
+Find lines containing 172.16.0.1
+    ↓
+Pass matching lines through pipe
+    ↓
+Find lines containing POST
+```
+
+---
+
+# 41. `less`
+
+`less` is useful for viewing large files interactively.
+
+```bash
+less access.log
+```
+
+Useful keys:
+
+| Key     | Function               |
+| ------- | ---------------------- |
+| `Space` | Next page              |
+| `b`     | Previous page          |
+| `/`     | Search                 |
+| `n`     | Next search result     |
+| `N`     | Previous search result |
+| `q`     | Quit                   |
+
+Example:
+
+```text
+/172.16.0.1
+```
+
+This searches for the specified IP inside `less`.
+
+---
+
+# 42. `tail`
+
+`tail` displays the end of a file or command output.
+
+For example:
+
+```bash
+tail -1 access.log
+```
+
+This displays the final line of `access.log`.
+
+It can also be used after other commands:
+
+```bash
+grep "172.16.0.1" access.log | grep "POST" | tail -1
+```
+
+Meaning:
+
+```text
+access.log
+    ↓
+Filter IP
+    ↓
+Filter POST requests
+    ↓
+Display the final matching line
+```
+
+---
+
+# 43. Linux Command Operators
+
+These operators are important for log analysis.
+
+## Pipe `|`
+
+```bash
+command1 | command2
+```
+
+Meaning:
+
+```text
+command1 output
+      ↓
+command2 input
+```
+
+Example:
+
+```bash
+grep "POST" access.log | tail -1
+```
+
+---
+
+## OR Operator `||`
+
+```bash
+command1 || command2
+```
+
+Meaning:
+
+> Execute `command2` if `command1` fails.
+
+Example:
+
+```bash
+ping -c 1 192.168.1.1 || echo "Host unavailable"
+```
+
+`||` is different from the pipe `|`.
+
+---
+
+## Output Redirection `>`
+
+```bash
+command > file.txt
+```
+
+Redirects standard output into a file, normally replacing the existing contents.
+
+Example:
+
+```bash
+cat access.log > backup.log
+```
+
+---
+
+# 44. Manual Log Analysis Workflow
+
+A simplified investigation workflow can look like:
+
+```text
+                 LOG
+                  ↓
+          Understand Format
+                  ↓
+        Identify Suspicious IP
+                  ↓
+                grep
+                  ↓
+        Filter Relevant Requests
+                  ↓
+         Check Timestamps
+                  ↓
+       Check URLs / Methods
+                  ↓
+        Check Status Codes
+                  ↓
+          Build Timeline
+                  ↓
+      Identify Suspicious Activity
+```
+
+Example:
+
+```bash
+grep "172.16.0.1" access.log | grep "POST" | tail -1
+```
+
+This command performs three operations:
+
+1. Filters lines containing the specified IP.
+2. Filters those results for `POST`.
+3. Displays the last matching line.
+
+---
+
+# 45. Practical Log Analysis Mindset
+
+When analysing logs, do not immediately assume that one unusual event is malicious.
+
+Instead, build context.
+
+Ask:
+
+```text
+WHO?
+    ↓
+Which account/user?
+
+WHAT?
+    ↓
+What activity occurred?
+
+WHEN?
+    ↓
+When did it happen?
+
+WHERE?
+    ↓
+Which host/IP/resource?
+
+HOW?
+    ↓
+How did the activity occur?
+
+WHAT ELSE?
+    ↓
+Are there related events?
+```
+
+Correlation between multiple events is often more useful than analysing one log entry in isolation.
+
+---
+
+# Module 10 — Master Revision Map
+
+```text
+                 DEFENSIVE SECURITY
+                        |
+        +---------------+----------------+
+        |               |                |
+        ↓               ↓                ↓
+       SOC          FORENSICS       INCIDENT RESPONSE
+        |               |                |
+ People/Process/    Evidence          PICERL
+ Technology         Collection        Preparation
+        |            Examination       Identification
+        ↓            Analysis          Containment
+      SIEM           Reporting         Eradication
+      EDR                              Recovery
+    Firewall                         Lessons Learned
+        |
+        ↓
+      LOGS
+        |
+   +----+----------+
+   |    |          |
+   ↓    ↓          ↓
+System Security Application
+   |    |          |
+Network Audit     Access
+        |
+        ↓
+  EVENT VIEWER
+        |
+        +-- 4624 → Successful Logon
+        +-- 4625 → Failed Logon
+        +-- 4634 → Logoff
+        +-- 4720 → User Created
+        +-- 4724 → Password Reset Attempt
+        +-- 4722 → Account Enabled
+        +-- 4725 → Account Disabled
+        +-- 4726 → Account Deleted
+```
+
+---
+
+# 20 Things to Remember
+
+1. **SOC = Security Operations Center**
+2. SOC focuses on **monitoring, detection, investigation, and response**.
+3. SOC pillars = **People + Process + Technology**.
+4. **L1 → initial triage, L2 → deeper investigation, L3 → advanced investigation**.
+5. **SIEM → centralized logs/events and correlation**.
+6. **EDR → endpoints**.
+7. **Firewall → network traffic control**.
+8. Digital forensics = **investigation of digital evidence**.
+9. Forensic process = **Collection → Examination → Analysis → Reporting**.
+10. Chain of Custody = **documented evidence history**.
+11. Write Blocker = **helps prevent modification of original evidence**.
+12. `exiftool` = **file metadata analysis**.
+13. SANS incident response = **PICERL**.
+14. **Playbook = WHAT**.
+15. **Runbook = HOW**.
+16. `4624` = **successful logon**.
+17. `4625` = **failed logon**.
+18. `4720` = **user account created**.
+19. `4724` = **account password reset attempt**.
+20. `grep "IP" access.log | grep "POST"` = **filter requests by IP and POST method**.
+
+---
+
+# Final Mental Model
+
+The entire module can be remembered as:
+
+```text
+DEFEND
+  ↓
+MONITOR
+  ↓
+DETECT
+  ↓
+INVESTIGATE
+  ↓
+RESPOND
+  ↓
+RECOVER
+  ↓
+LEARN
+```
+
+And the supporting components are:
+
+```text
+SOC
+ ↓
+Security Monitoring
+ ↓
+Logs
+ ↓
+Detection
+ ↓
+Investigation
+ ↓
+Forensics
+ ↓
+Incident Response
+ ↓
+Recovery
+```
+
+The key idea is that **defensive security is not only about detecting an attack**. It also involves collecting useful evidence, understanding what happened, responding appropriately, recovering affected systems, and learning from the incident to improve future security.
+
+linux log analysis;-
+
+cat access.log
+cat access1.log access2.log > combined_access.log
+
+grep "192.168.1.1" access.log
+grep "POST" access.log
+grep "172.16.0.1" access.log | grep "POST"
+
+less access.log
+tail -1 access.log
+
+grep "172.16.0.1" access.log | grep "POST" | tail -1
