@@ -1,0 +1,806 @@
+# Network Protocols — Complete Notes
+
+## 1. HTTP — Hypertext Transfer Protocol
+
+HTTP is an application-layer protocol used for communication between a client and a web server.
+
+```text
+Client (Browser) → HTTP Request → Web Server
+Client (Browser) ← HTTP Response ← Web Server
+```
+
+### Important Ports
+
+```text
+80  → HTTP
+443 → HTTPS
+```
+
+- HTTP normally sends data without encryption.
+- HTTPS = HTTP + TLS.
+- Common web servers include Nginx, Apache, and IIS.
+
+### Manually Sending an HTTP Request with Telnet
+
+Connect to port 80:
+
+```bash
+telnet MACHINE_IP 80
+```
+
+Then send:
+
+```http
+GET /index.html HTTP/1.1
+Host: example.com
+
+```
+
+A blank line after the headers tells the server that the request headers are finished.
+
+### HTTP Request Structure
+
+```http
+GET /index.html HTTP/1.1
+Host: example.com
+```
+
+- `GET` → Requests a resource.
+- `/index.html` → Requested resource/path.
+- `HTTP/1.1` → HTTP version.
+- `Host` → Specifies the hostname being requested.
+
+### Common HTTP Responses
+
+```text
+200 OK
+```
+
+The request was successful.
+
+```text
+404 Not Found
+```
+
+The requested resource could not be found.
+
+Other useful status codes include:
+
+```text
+301 → Moved Permanently
+302 → Found / Temporary Redirect
+400 → Bad Request
+401 → Unauthorized
+403 → Forbidden
+500 → Internal Server Error
+```
+
+### HTTP Headers and Reconnaissance
+
+HTTP response headers can reveal information about the server.
+
+Example:
+
+```http
+Server: nginx/1.18.0 (Ubuntu)
+```
+
+This may reveal the web server software and sometimes its version.
+
+However, headers can be modified or hidden, so they should be treated as clues rather than absolute proof.
+
+### HTTP Versions
+
+```text
+HTTP/1.1 → Traditional text-based HTTP with persistent connections
+HTTP/2   → Multiplexing, header compression, binary framing
+HTTP/3   → HTTP over QUIC, using UDP
+```
+
+### HTTP Mental Model
+
+```text
+HTTP
+ ↓
+Client sends request
+ ↓
+Server processes request
+ ↓
+Server sends response
+ ↓
+Client displays/uses the response
+```
+
+**Remember:** HTTP = Web communication.
+
+---
+
+# 2. FTP — File Transfer Protocol
+
+FTP is an application-layer protocol designed for transferring files between a client and a server.
+
+### Port
+
+```text
+21 → FTP control connection
+```
+
+FTP commonly uses a separate data connection in addition to the control connection.
+
+FTP without TLS can expose authentication and data in plaintext.
+
+### Connecting with Telnet
+
+```bash
+telnet MACHINE_IP 21
+```
+
+Example FTP commands:
+
+```text
+USER frank
+PASS D2xc9CgD
+```
+
+### Useful FTP Commands
+
+```text
+SYST
+```
+
+Displays information about the server's operating system/type.
+
+```text
+PASV
+```
+
+Requests passive mode for the data connection.
+
+```text
+TYPE A
+```
+
+Sets ASCII transfer mode.
+
+```text
+TYPE I
+```
+
+Sets binary/image transfer mode.
+
+```text
+STAT
+```
+
+Requests server/status information.
+
+```text
+QUIT
+```
+
+Closes the FTP session.
+
+### Using an FTP Client
+
+Connect:
+
+```bash
+ftp MACHINE_IP
+```
+
+After authentication:
+
+```text
+ls
+```
+
+Lists files/directories available on the remote server.
+
+```text
+get README.txt
+```
+
+Downloads `README.txt` to the local machine.
+
+```text
+quit
+```
+
+Exits the FTP client.
+
+To inspect the downloaded file locally:
+
+```bash
+ls
+cat README.txt
+```
+
+### FTP Connections
+
+FTP generally separates control and data communication.
+
+```text
+Control connection → TCP 21
+Data connection    → Separate connection
+```
+
+#### Active Mode
+
+The server initiates the data connection toward the client.
+
+#### Passive Mode
+
+The client initiates the data connection to a server-selected high port.
+
+Passive mode is commonly easier to use through firewalls/NAT because the client initiates both connections.
+
+### Anonymous FTP
+
+Some FTP servers may allow anonymous access:
+
+```text
+Username: anonymous
+```
+
+Whether anonymous access is permitted depends on the server configuration.
+
+In an authorized security assessment, checking for unintended anonymous access can be useful.
+
+### FTP Mental Model
+
+```text
+FTP
+ ↓
+Control connection
+ ↓
+Authentication / commands
+ ↓
+Separate data connection
+ ↓
+File transfer
+```
+
+**Remember:** FTP = File Transfer.
+
+---
+
+# 3. SMTP — Simple Mail Transfer Protocol
+
+SMTP is primarily used to **send and relay email**.
+
+A simplified email flow is:
+
+```text
+Sender
+   ↓
+SMTP
+   ↓
+Mail Server
+   ↓
+SMTP
+   ↓
+Recipient Mail Server
+   ↓
+Recipient
+```
+
+### Ports
+
+```text
+25  → SMTP
+587 → Mail submission
+465 → SMTP over implicit TLS
+```
+
+Port 25 is commonly used for server-to-server mail transfer, while port 587 is commonly used for authenticated mail submission by clients.
+
+### Email Components
+
+A simplified architecture can contain:
+
+```text
+MUA → MSA → MTA → MTA → MDA → MUA
+```
+
+- **MUA** → Mail User Agent; the email application used by the user.
+- **MSA** → Mail Submission Agent; accepts outgoing mail from a client.
+- **MTA** → Mail Transfer Agent; transfers/relays email between mail systems.
+- **MDA** → Mail Delivery Agent; delivers mail into the recipient's mailbox.
+
+### SMTP Using Telnet
+
+Connect to an SMTP server:
+
+```bash
+telnet MACHINE_IP 25
+```
+
+A basic SMTP conversation can look like:
+
+```text
+HELO telnet
+MAIL FROM:<sender@example.com>
+RCPT TO:<recipient@example.com>
+DATA
+```
+
+Then provide the message:
+
+```text
+From: sender@example.com
+To: recipient@example.com
+Subject: Test
+
+Hello
+.
+```
+
+Finally:
+
+```text
+QUIT
+```
+
+### Important SMTP Commands
+
+```text
+HELO
+```
+
+Introduces the client to the SMTP server.
+
+```text
+MAIL FROM
+```
+
+Specifies the envelope sender.
+
+```text
+RCPT TO
+```
+
+Specifies the envelope recipient.
+
+```text
+DATA
+```
+
+Starts the email content.
+
+```text
+.
+```
+
+A line containing only `.` ends the `DATA` section.
+
+```text
+QUIT
+```
+
+Terminates the SMTP session.
+
+### Email Spoofing
+
+Historically, SMTP itself did not provide strong sender-identity authentication.
+
+Modern email systems use technologies such as:
+
+```text
+SPF
+DKIM
+DMARC
+```
+
+to help authenticate authorized sending infrastructure and reduce email spoofing.
+
+### SMTP Mental Model
+
+```text
+SMTP
+ ↓
+Send / relay email
+ ↓
+Mail server
+ ↓
+Recipient mail server
+```
+
+**Remember:** SMTP = Send email.
+
+---
+
+# 4. POP3 — Post Office Protocol Version 3
+
+POP3 is an email retrieval protocol designed primarily around downloading messages from a mail server to a client.
+
+### Ports
+
+```text
+110 → POP3
+995 → POP3 over TLS
+```
+
+Port 110 can support plaintext communication or STARTTLS if the server provides it.
+
+Port 995 uses TLS from the beginning of the connection.
+
+### Connecting with Telnet
+
+```bash
+telnet MACHINE_IP 110
+```
+
+Login:
+
+```text
+USER frank
+PASS D2xc9CgD
+```
+
+A successful response may look like:
+
+```text
++OK logged in.
+```
+
+### Important POP3 Commands
+
+```text
+STAT
+```
+
+Returns the number of messages and total mailbox size.
+
+```text
+LIST
+```
+
+Lists messages and their sizes.
+
+```text
+RETR 1
+```
+
+Retrieves message number 1.
+
+```text
+DELE 1
+```
+
+Marks message number 1 for deletion.
+
+```text
+RSET
+```
+
+Resets changes made during the current session.
+
+```text
+QUIT
+```
+
+Ends the session.
+
+### `+OK`
+
+```text
++OK
+```
+
+Indicates a positive/successful POP3 response.
+
+### POP3 Model
+
+```text
+Mail Server
+     ↓
+  Download
+     ↓
+Local Device
+```
+
+POP3 was traditionally designed around downloading mail to a client, often with messages being removed from the server after successful retrieval depending on client/server configuration.
+
+Modern POP3 clients can also be configured to leave copies on the server.
+
+### POP3 Mental Model
+
+**POP3 = Retrieve/download email.**
+
+---
+
+# 5. IMAP — Internet Message Access Protocol
+
+IMAP is designed to keep email stored on the server while allowing clients to access and synchronize mailbox state.
+
+```text
+                 IMAP Server
+                /     |     \
+            Phone   Laptop  Tablet
+```
+
+For example:
+
+```text
+Phone
+  ↓
+Reads email
+  ↓
+Server updates mailbox state
+  ↓
+Laptop
+  ↓
+Also sees the message as read
+```
+
+This makes IMAP particularly useful when the same mailbox is accessed from multiple devices.
+
+### Ports
+
+```text
+143 → IMAP
+993 → IMAP over TLS
+```
+
+Port 143 can support plaintext communication or STARTTLS when supported.
+
+Port 993 uses TLS from the beginning.
+
+### Connecting with Telnet
+
+```bash
+telnet MACHINE_IP 143
+```
+
+### IMAP Tags
+
+Unlike POP3, IMAP commands are normally prefixed with a client-generated **tag**.
+
+Example:
+
+```text
+c1 LOGIN frank D2xc9CgD
+c2 LIST "" "*"
+c3 EXAMINE INBOX
+c4 LOGOUT
+```
+
+Here:
+
+```text
+c1
+c2
+c3
+c4
+```
+
+are command identifiers.
+
+A server may respond:
+
+```text
+c1 OK LOGIN completed
+```
+
+The `c1` indicates which command the response belongs to.
+
+### Important IMAP Commands
+
+```text
+LOGIN username password
+```
+
+Authenticates the user.
+
+```text
+LIST "" "*"
+```
+
+Lists available mailboxes/folders.
+
+```text
+SELECT INBOX
+```
+
+Selects a mailbox for read/write operations.
+
+```text
+EXAMINE INBOX
+```
+
+Selects a mailbox in read-only mode.
+
+```text
+FETCH 1 BODY[]
+```
+
+Retrieves message data for message number 1.
+
+```text
+SEARCH criteria
+```
+
+Searches messages according to specified criteria.
+
+```text
+STORE 1 +FLAGS (\Seen)
+```
+
+Adds the `\Seen` flag to message 1, marking it as read.
+
+```text
+LOGOUT
+```
+
+Ends the IMAP session.
+
+### CAPABILITY
+
+An IMAP server can advertise supported features.
+
+Example:
+
+```text
+* OK [CAPABILITY IMAP4rev1 ... STARTTLS ... IDLE ... ACL ...]
+```
+
+Examples of capabilities:
+
+```text
+IMAP4rev1 → IMAP protocol version
+STARTTLS  → Ability to upgrade the connection to TLS
+IDLE      → Allows clients to wait for mailbox updates
+ACL       → Access-control related functionality
+```
+
+The exact capabilities depend on the server.
+
+### LIST
+
+Example:
+
+```text
+c2 LIST "" "*"
+```
+
+The server may return folders such as:
+
+```text
+INBOX
+INBOX.Trash
+INBOX.Drafts
+INBOX.Sent
+```
+
+The exact mailbox naming convention depends on the server.
+
+### EXAMINE
+
+```text
+c3 EXAMINE INBOX
+```
+
+Opens the mailbox in read-only mode.
+
+A response such as:
+
+```text
+* 0 EXISTS
+```
+
+means that the selected mailbox currently contains zero messages.
+
+### IMAP Mental Model
+
+```text
+IMAP
+ ↓
+Email remains primarily on server
+ ↓
+Clients access mailbox
+ ↓
+State/folders can synchronize
+ ↓
+Multiple devices stay consistent
+```
+
+**Remember:** IMAP = Email synchronization.
+
+---
+
+# POP3 vs IMAP
+
+```text
+POP3
+ ↓
+Retrieve/download email
+ ↓
+Local client
+```
+
+```text
+IMAP
+ ↓
+Email remains on server
+ ↓
+Multiple clients synchronize
+```
+
+| Feature | POP3 | IMAP |
+|---|---|---|
+| Main purpose | Download/retrieve mail | Access and synchronize mail |
+| Default port | 110 | 143 |
+| TLS port | 995 | 993 |
+| Server-side mailbox management | Limited | Strong |
+| Multiple devices | Less convenient | Excellent |
+| Folder synchronization | Limited | Yes |
+| Read/unread synchronization | Limited | Yes |
+
+---
+
+# Network Protocol Ports — Quick Reference
+
+```text
+21   → FTP
+23   → Telnet
+25   → SMTP
+80   → HTTP
+110  → POP3
+143  → IMAP
+443  → HTTPS
+465  → SMTP over implicit TLS
+587  → SMTP Submission
+993  → IMAP over TLS
+995  → POP3 over TLS
+```
+
+---
+
+# One-Line Revision
+
+```text
+FTP   → Files
+HTTP  → Web
+SMTP  → Send/relay email
+POP3  → Retrieve/download email
+IMAP  → Access/synchronize email
+```
+
+# Protocol Flow
+
+```text
+Web:
+Client → HTTP → Web Server
+
+File Transfer:
+Client → FTP → FTP Server
+
+Sending Email:
+Sender → SMTP → Mail Server → SMTP → Recipient Mail Server
+
+Receiving Email:
+Client → POP3/IMAP → Mail Server
+```
+
+# Key Things to Remember
+
+1. HTTP normally uses TCP 80; HTTPS normally uses TCP 443.
+2. HTTPS is HTTP protected by TLS.
+3. FTP uses a control connection and a separate data connection.
+4. FTP control traffic normally uses TCP 21.
+5. SMTP is primarily for sending and relaying email.
+6. TCP 25 is commonly used for SMTP server-to-server transfer.
+7. TCP 587 is commonly used for mail submission.
+8. POP3 is primarily designed for retrieving/downloaded mail.
+9. IMAP is designed around server-side mailbox access and synchronization.
+10. POP3S uses TCP 995.
+11. IMAPS uses TCP 993.
+12. SMTP commands include `MAIL FROM`, `RCPT TO`, and `DATA`.
+13. POP3 commands include `STAT`, `LIST`, `RETR`, and `DELE`.
+14. IMAP commands normally use client-generated tags.
+15. `SELECT` opens an IMAP mailbox for read/write operations.
+16. `EXAMINE` opens an IMAP mailbox read-only.
+17. HTTP response headers can provide useful reconnaissance clues.
+18. A revealed software version is a clue, not proof of the exact running software/version.
+19. Telnet can be used as a basic TCP client to manually interact with text-based protocols.
+20. Network protocols should always be tested only against systems you own or are explicitly authorized to assess.
