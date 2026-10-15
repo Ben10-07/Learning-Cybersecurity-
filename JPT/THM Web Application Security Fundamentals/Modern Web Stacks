@@ -1,0 +1,522 @@
+# 1. Introduction
+
+Web applications are built using different programming languages, frameworks, web servers, and databases. These technologies may expose clues through HTTP headers, cookies, error messages, response behavior, and publicly available documentation.
+
+**Web stack fingerprinting** is the process of identifying the technologies used by a web application.
+
+### Why Is Fingerprinting Important?
+
+- Identifies the likely web server and application framework.
+- Helps determine whether known vulnerabilities may be relevant.
+- Supports the selection of appropriate security tests.
+- Reduces unnecessary testing by providing technical context.
+- Helps build evidence-based penetration-testing reports.
+
+**Important:** A technology banner is an investigative clue, not proof that an application is vulnerable.
+
+---
+
+## 2. Understanding Common Web Stacks
+
+The ports below are examples from the lab environment, not mandatory default ports for these technologies.
+
+### 2.1 MERN Stack — Lab Port 3000
+
+MERN stands for:
+
+- **MongoDB:** A NoSQL database.
+- **Express.js:** A web framework for Node.js.
+- **React:** A JavaScript library for building user interfaces.
+- **Node.js:** A JavaScript runtime.
+
+Express applications may expose the `X-Powered-By: Express` response header. Cookies such as `connect.sid` can also provide clues about the application's session-management implementation.
+
+However, these indicators can be disabled, modified, or imitated.
+
+### 2.2 Next.js — Lab Port 3001
+
+Next.js is a React-based framework used to build web applications. It supports routing, server-side rendering, and middleware.
+
+Middleware can perform tasks such as request processing, redirects, and authentication-related checks.
+
+A secure application must still enforce authorization at the protected resource or data-access layer. Middleware should not be the only safeguard protecting sensitive data.
+
+### 2.3 Django — Lab Port 8000
+
+Django is a Python web framework that provides routing, an Object-Relational Mapper (ORM), authentication features, and security middleware.
+
+The ORM allows developers to interact with relational databases through Python objects and methods.
+
+Using an ORM does not automatically eliminate SQL injection. Unsafe raw SQL or vulnerable query construction can still create risks.
+
+### 2.4 LAMP / Apache — Lab Port 8080
+
+LAMP stands for:
+
+- **Linux:** Operating system.
+- **Apache:** Web server.
+- **MySQL:** Relational database.
+- **PHP:** Server-side programming language.
+
+Apache receives HTTP requests and serves web content. The Common Gateway Interface (CGI) can allow a web server to execute configured programs.
+
+Incorrect path handling, unsafe CGI configuration, or vulnerable software versions can introduce security risks.
+
+---
+
+## 3. HTTP Fingerprinting with cURL
+
+`curl` is a command-line tool used to transfer data and inspect HTTP communication.
+
+### 3.1 Inspect Response Headers
+
+```bash
+curl -I http://TARGET-IP:3000/
+```
+
+- `curl`: Sends an HTTP request.
+- `-I`: Requests response headers without the normal response body.
+- `http://TARGET-IP:3000/`: Specifies the target URL and port.
+
+### 3.2 Inspect Request and Response Details
+
+```bash
+curl -v http://TARGET-IP:3001/dashboard
+```
+
+The `-v` option displays verbose connection, request, and response information.
+
+### Common Fingerprinting Signals
+
+| Signal | Possible Meaning |
+|---|---|
+| `X-Powered-By: Express` | Express.js may be in use |
+| `X-Powered-By: Next.js` | May indicate a Next.js application |
+| `Server: Apache/2.4.49` | Apache server with a reported version |
+| `WSGIServer` or `CPython` | May indicate a Python web-serving environment |
+| `connect.sid` | May indicate Express-session-related cookie handling |
+| `X-Frame-Options` | Provides a browser control related to framing and clickjacking |
+| `X-Content-Type-Options: nosniff` | Helps prevent MIME-type sniffing |
+
+Not every application exposes these indicators. Headers can also be removed, customized, or spoofed.
+
+**Best practice:** Combine multiple observations rather than relying on a single header.
+
+---
+
+## 4. Vulnerability One — Prototype Pollution
+
+**CVE:** CVE-2020-8203  
+**Main concept:** JavaScript prototype pollution  
+**Potential impact:** Depends on how the vulnerable dependency is used by the application.
+
+### 4.1 Understanding JavaScript Prototypes
+
+JavaScript objects can inherit properties through a prototype chain.
+
+Prototype inheritance is a normal language feature. The security problem occurs when untrusted input can manipulate prototype-related properties in a way that affects application behavior.
+
+### 4.2 What Is Prototype Pollution?
+
+Prototype Pollution occurs when attacker-controlled input modifies properties associated with an object's prototype. Other objects may then inherit unexpected properties.
+
+In applications with unsafe object-merging logic, this may affect application decisions or security checks.
+
+For example, an authorization check that incorrectly trusts an inherited property such as `isAdmin` may behave unexpectedly.
+
+The actual impact depends on the vulnerable code, the affected objects, and how the application performs authorization.
+
+### 4.3 Lab Request Analysis
+
+A normal JSON update request might look like this:
+
+```bash
+curl -b cookies.txt \
+  -X POST http://TARGET-IP:3000/api/user/update \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","email":"alice@example.com"}'
+```
+
+**Command breakdown:**
+
+- `-b cookies.txt`: Sends cookies from the specified file.
+- `-X POST`: Uses the POST HTTP method.
+- `-H`: Sets a request header.
+- `-d`: Sends a request body.
+
+A response such as:
+
+```json
+{
+  "status": "updated"
+}
+```
+
+shows that the server returned an update status. It does not independently prove that the intended data was saved correctly.
+
+In the lab, the next stage examined how specially crafted JSON input could interact with prototype-related properties and application authorization checks.
+
+### 4.4 CVE Context
+
+CVE-2020-8203 is associated with prototype pollution in affected versions of Lodash. It should not be interpreted as meaning that every MERN application is vulnerable.
+
+To assess an application, identify the affected dependency and version, determine whether the vulnerable functionality is reachable, and evaluate the actual security impact.
+
+### 4.5 Prevention
+
+- Upgrade vulnerable dependencies to fixed versions.
+- Avoid unsafe recursive object merging.
+- Validate input against an explicit schema.
+- Handle dangerous object keys appropriately.
+- Perform authorization checks using trusted server-side data.
+- Do not rely on unexpected inherited properties for privilege decisions.
+
+**Key takeaway:** Prototype Pollution can cause unexpected inherited properties and may affect security-sensitive application logic.
+
+---
+
+## 5. Vulnerability Two — Next.js Middleware Bypass
+
+**CVE:** CVE-2025-29927  
+**Main concept:** Middleware bypass  
+**Potential impact:** Authentication or authorization controls may be bypassed in affected configurations.
+
+### 5.1 Understanding Middleware
+
+Middleware executes during request processing and can perform tasks such as:
+
+- Checking request conditions.
+- Redirecting unauthenticated users.
+- Applying routing rules.
+- Performing preliminary access checks.
+
+A typical protected-route workflow is:
+
+1. A user requests `/dashboard`.
+2. The application performs authentication checks.
+3. An unauthenticated request is redirected or denied.
+4. An authorized request proceeds to the protected resource.
+
+Middleware can contribute to this workflow, but sensitive resources must have reliable server-side authorization.
+
+### 5.2 What Went Wrong?
+
+CVE-2025-29927 concerns a vulnerability in affected Next.js versions involving the `x-middleware-subrequest` header.
+
+Under the relevant conditions, specially crafted requests could interfere with middleware execution and bypass protections implemented there.
+
+This issue does not mean that every Next.js application is vulnerable. The affected version, configuration, and request-handling behavior must be verified.
+
+### 5.3 Fingerprinting and Response Inspection
+
+```bash
+curl -I http://TARGET-IP:3001/
+```
+
+This checks response headers for possible technology indicators.
+
+Inspect a protected route:
+
+```bash
+curl -v http://TARGET-IP:3001/dashboard
+```
+
+The response can help determine whether the application redirects, denies access, or returns content. A single response is not sufficient to establish the complete authorization behavior.
+
+### 5.4 Saving and Searching a Response
+
+```bash
+curl -s http://TARGET-IP:3001/dashboard > output.txt
+```
+
+- `-s`: Suppresses progress output.
+- `>`: Redirects standard output to a file.
+- `output.txt`: Destination file.
+
+To search a lab response for a flag:
+
+```bash
+grep -o 'THM{[^}]*}' output.txt
+```
+
+- `grep`: Searches text.
+- `-o`: Prints only the matching portion.
+- `THM{[^}]*}`: Matches a string beginning with `THM{` and ending at the next `}`.
+
+If no matching text exists in the saved response, the command returns no flag.
+
+### 5.5 Prevention
+
+- Upgrade to a fixed Next.js release.
+- Enforce authorization at the protected route or data-access layer.
+- Avoid trusting internal request headers supplied by untrusted clients.
+- Verify access controls on the actual resource, not only in middleware.
+- Test the behavior of protected endpoints after applying a fix.
+
+**Key takeaway:** Middleware is useful, but it should not be the sole protection for sensitive resources.
+
+---
+
+## 6. Vulnerability Three — Django SQL Injection
+
+**CVE:** CVE-2021-35042  
+**Main concept:** SQL injection in affected Django query-handling functionality.
+
+### 6.1 What Is SQL Injection?
+
+SQL Injection occurs when untrusted input changes the intended structure or meaning of a database query.
+
+For example, an application may construct SQL unsafely using user-supplied values instead of treating those values strictly as data.
+
+### 6.2 Understanding the Django ORM
+
+ORM stands for Object-Relational Mapper.
+
+Django's ORM allows developers to work with database records using Python objects and methods rather than writing SQL for every operation.
+
+The ORM can help prevent common SQL injection mistakes, but unsafe raw SQL and vulnerable query construction can still introduce risk.
+
+### 6.3 Fingerprinting
+
+```bash
+curl -I http://TARGET-IP:8000/products/
+```
+
+The response headers may provide clues about the web server and application environment.
+
+For example, a Python WSGI server banner may indicate a Python-based deployment. It does not establish which Django version is installed.
+
+### 6.4 Understanding the `order` Parameter
+
+A products page might accept a URL parameter such as:
+
+```text
+/products/?order=...
+```
+
+If the application uses the supplied value to construct SQL unsafely, the parameter may become a potential injection point.
+
+Developers should allow only approved sort fields and directions rather than treating arbitrary user input as SQL syntax.
+
+### 6.5 Important SQL and URL Terms
+
+| Term | Meaning |
+|---|---|
+| `ORDER BY` | Controls the ordering of query results |
+| `database()` | A MySQL function that returns the current database name |
+| `CONCAT()` | Joins string values |
+| `UPDATEXML()` | A MySQL XML function that may produce errors for invalid XML operations |
+| `0x7e` | Hexadecimal representation of the tilde character (`~`) |
+| `%20` | URL-encoded space |
+| `grep -o` | Prints matching portions of command output |
+
+The lab demonstrates how database errors can disclose information when application error handling and query construction are unsafe.
+
+### 6.6 CVE Context
+
+CVE-2021-35042 is a Django SQL-injection vulnerability involving specific query-handling behavior. The lab's parameter-based injection scenario should be understood in its application context rather than assumed to describe every Django deployment.
+
+A server banner alone cannot confirm that the affected Django version or vulnerable code path is present.
+
+### 6.7 GET and POST Requests
+
+```bash
+curl -s "http://TARGET-IP:8000/products/"
+```
+
+```bash
+curl -s -X POST "http://TARGET-IP:8000/products/"
+```
+
+- The default HTTP request made by `curl` for a URL is typically GET.
+- `-X POST` selects the POST method.
+- `-s` suppresses progress output.
+
+Changing GET to POST does not automatically resolve or trigger a vulnerability. The application may require a request body, CSRF token, or other fields.
+
+### 6.8 Prevention
+
+- Use parameterized queries.
+- Prefer safe ORM operations.
+- Never concatenate untrusted values directly into SQL syntax.
+- Validate sort fields and directions against an allowlist.
+- Keep Django and its dependencies patched.
+- Avoid exposing detailed database errors in production.
+
+**Key takeaway:** SQL injection occurs when untrusted input changes the intended database query.
+
+---
+
+## 7. Vulnerability Four — Apache Path Traversal
+
+**CVE:** CVE-2021-41773  
+**Affected version:** Apache HTTP Server 2.4.49  
+**Potential impact:** Path traversal; remote code execution under additional conditions.
+
+### 7.1 What Is Path Traversal?
+
+Path Traversal occurs when incorrect path handling allows a request to access files outside the directory intended by the application or server configuration.
+
+### 7.2 What Is Remote Code Execution?
+
+Remote Code Execution (RCE) means that code or commands can be executed on a remote system under the relevant conditions.
+
+Path traversal does not automatically imply RCE. For CVE-2021-41773, the impact depended on the server configuration and the resources accessible to the service. Apache's related CVE-2021-42013 addressed an incomplete fix and additional consequences in Apache HTTP Server 2.4.50.
+
+### 7.3 Fingerprinting the Server
+
+```bash
+curl -I http://TARGET-IP:8080/
+```
+
+A response such as:
+
+```http
+Server: Apache/2.4.49 (Unix)
+```
+
+provides a clue that the server reports a version associated with CVE-2021-41773.
+
+However, banners can be inaccurate or modified. Confirm the installed version and configuration whenever possible.
+
+### 7.4 Inspecting Responses and Errors
+
+```bash
+curl -v http://TARGET-IP:8080/nonexistent 2>&1
+```
+
+- `-v`: Displays verbose connection and HTTP details.
+- `/nonexistent`: Requests a candidate path.
+- `2>&1`: Redirects standard error to standard output.
+
+A CGI-related path can also be inspected during authorized lab testing:
+
+```bash
+curl -v http://TARGET-IP:8080/cgi-bin/ 2>&1
+```
+
+A `403 Forbidden` response indicates that the request was denied. It does not independently prove that CGI execution is enabled or that RCE is possible.
+
+### 7.5 Important Terms
+
+| Term | Meaning |
+|---|---|
+| `--path-as-is` | Tells curl not to normalize the URL path itself |
+| `--data` | Sends request data, typically using POST |
+| `id` | Displays the current user's and groups' identities on Unix-like systems |
+| `/etc/passwd` | A Linux file containing user-account records |
+| CGI | Common Gateway Interface, a mechanism for executing configured programs through a web server |
+
+The lab illustrates how a path-normalization weakness can lead to unintended file access and, under suitable CGI conditions, potentially more severe consequences.
+
+### 7.6 Prevention
+
+- Upgrade to a fixed Apache release.
+- Disable unnecessary CGI execution.
+- Restrict file-system access and service-account privileges.
+- Configure directory access controls correctly.
+- Prevent sensitive files from being exposed through web-accessible paths.
+
+**Key takeaway:** Path traversal can expose resources outside an intended directory. RCE requires additional conditions.
+
+---
+
+## 8. Automated Web-Server Scanning with Nikto
+
+Nikto is a web-server scanning tool that checks for common server misconfigurations, risky headers, exposed files, and known issues.
+
+### 8.1 Basic Syntax
+
+```bash
+nikto -h http://TARGET-IP:3000
+```
+
+- `nikto`: Starts the scanner.
+- `-h`: Specifies the target host.
+- URL: Identifies the target service and port.
+
+In the lab, scans were performed against services associated with the following stacks:
+
+| Port | Suspected Stack |
+|---|---|
+| `3000` | MERN / Express |
+| `3001` | Next.js |
+| `8000` | Django / Python server |
+| `8080` | Apache |
+
+### 8.2 Interpreting Findings
+
+**Missing security headers:** May indicate that a recommended browser protection is not configured.
+
+**Cookie without `HttpOnly`:** Client-side JavaScript may be able to read the cookie. This can increase exposure if an application also has a script-injection vulnerability.
+
+**TRACE enabled:** A configuration finding that requires context. Its presence does not automatically prove an exploitable Cross-Site Tracing vulnerability.
+
+**Reported server version:** Helps identify potentially relevant CVEs, but the banner alone does not establish exploitability.
+
+### 8.3 Manual and Automated Testing
+
+- **Manual fingerprinting:** Inspect selected headers and responses with tools such as curl.
+- **Automated scanning:** Use Nikto to check a wider range of common issues.
+- **Verification:** Confirm findings and determine whether the necessary vulnerability conditions are present.
+
+Nikto cannot replace manual testing and may not detect application-specific flaws such as broken authorization logic or unsafe custom query construction.
+
+---
+
+## 9. Command Reference
+
+| Command or Option | Purpose |
+|---|---|
+| `curl -I URL` | Requests response headers |
+| `curl -v URL` | Displays verbose connection and HTTP details |
+| `curl -s URL` | Suppresses progress output |
+| `curl -b cookies.txt` | Sends cookies from a file |
+| `curl -X POST` | Selects the POST method |
+| `curl -H` | Sets a request header |
+| `curl -d` | Sends request data |
+| `--path-as-is` | Avoids curl-side URL-path normalization |
+| `>` | Redirects standard output into a file |
+| `grep` | Searches text |
+| `grep -o` | Prints matching portions |
+| `grep -i` | Performs case-insensitive matching |
+| `history` | Displays previous shell commands |
+| `clear` | Clears the terminal display |
+| `nmap` | Scans network ports and identifies services |
+| `nikto -h URL` | Runs a web-server scan against the specified host |
+
+---
+
+## 10. CVE Summary
+
+| CVE | Technology or Component | Main Concept |
+|---|---|---|
+| CVE-2020-8203 | Affected Lodash versions | Prototype Pollution |
+| CVE-2025-29927 | Affected Next.js versions | Middleware Bypass |
+| CVE-2021-35042 | Affected Django query-handling functionality | SQL Injection |
+| CVE-2021-41773 | Apache HTTP Server 2.4.49 | Path Traversal; potential additional impact under specific configurations |
+
+The lab lists CVSS scores of `7.4`, `9.1`, `9.8`, and `9.8`, respectively. Verify the scoring version and current vulnerability records before using these values in a report. CVSS scores express severity under a defined scoring system; they do not guarantee that a vulnerability is exploitable in every deployment.
+
+---
+
+## 11. Final Key Takeaways
+
+1. **Fingerprint first:** Use headers, cookies, server banners, and response behavior to identify likely technologies.
+2. **Verify versions:** Compare observed versions with reliable vulnerability advisories.
+3. **Understand the root cause:** Prototype manipulation, middleware trust, unsafe SQL construction, and path normalization represent different vulnerability classes.
+4. **Validate findings:** A banner, scanner alert, or unusual response is not conclusive proof.
+5. **Use automation carefully:** Nikto can accelerate initial checks, but application-specific testing remains important.
+6. **Recommend remediation:** Patch affected software, apply secure coding practices, and enforce authorization at protected resources.
+7. **Document evidence:** Record the affected component, observed behavior, impact, limitations, and recommended fix.
+
+### One-Line Revision
+
+- **Prototype Pollution:** Unexpected inherited properties may affect application logic.
+- **Middleware Bypass:** Middleware-based protections may be skipped in affected configurations.
+- **SQL Injection:** Untrusted input changes the intended database query.
+- **Path Traversal:** Incorrect path handling may expose resources outside the intended directory.
+
+**Workflow:** Fingerprint → Verify → Validate → Document → Recommend Remediation.
+
+**Authorized-use note:** Perform active vulnerability testing only in TryHackMe labs or against systems for which explicit authorization has been granted.
