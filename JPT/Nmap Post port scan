@@ -1,0 +1,656 @@
+**Nmap (Network Mapper)** is a network exploration and security auditing tool used to discover hosts, identify open ports, detect services, estimate operating systems, and investigate network behavior.
+
+### Common Uses
+
+- Discovering live hosts on a network.
+- Identifying open, closed, and filtered ports.
+- Detecting services and their versions.
+- Estimating the target operating system.
+- Investigating network routes.
+- Collecting additional information using the Nmap Scripting Engine (NSE).
+- Saving scan results in different formats.
+
+### Basic Command
+
+```bash
+nmap <TARGET_IP>
+```
+
+Replace `<TARGET_IP>` with the authorized target's IP address.
+
+Some scan types, such as SYN scanning, generally require elevated privileges to construct and send raw packets.
+
+## 2. Understanding Port States
+
+Nmap reports port states based on the responses it receives and the scan technique used.
+
+| State | Meaning |
+|---|---|
+| `open` | An application is accepting connections or responding on the port. |
+| `closed` | The port is reachable, but no application is listening on it. |
+| `filtered` | Filtering or another network obstacle prevents Nmap from determining whether the port is open or closed. |
+| `unfiltered` | Nmap can reach the port, but the scan cannot establish whether it is open or closed. |
+| `open|filtered` | Nmap cannot distinguish an open port from a filtered port. |
+| `closed|filtered` | Nmap cannot distinguish a closed port from a filtered port using the available evidence. |
+
+The last two states are ambiguous classifications and are not produced by every scan type.
+
+### TCP Three-Way Handshake
+
+A normal TCP connection is established through three steps:
+
+```text
+Client  ---- SYN ---->     Server
+Client  <-- SYN/ACK --     Server
+Client  ---- ACK ---->     Server
+```
+
+| Flag | Meaning |
+|---|---|
+| SYN | Initiates a TCP connection. |
+| ACK | Acknowledges received TCP segments. |
+| RST | Resets or rejects a TCP connection. |
+| FIN | Indicates that the sender has finished sending data. |
+| PSH | Requests prompt delivery of buffered data to the receiving application. |
+| URG | Indicates that the Urgent Pointer field is significant. |
+
+## 3. Basic Port Scanning
+
+### TCP Connect Scan (`-sT`)
+
+```bash
+nmap -sT <TARGET_IP>
+```
+
+- Uses the operating system's TCP `connect()` mechanism.
+- Attempts to complete the TCP handshake with the target port.
+- Does not require the same raw-packet privileges as a SYN Scan on typical systems.
+- Can be more noticeable because it completes TCP connections.
+
+### SYN Scan (`-sS`)
+
+```bash
+sudo nmap -sS <TARGET_IP>
+```
+
+- Sends TCP SYN probes.
+- A SYN/ACK response generally indicates an open port.
+- A RST response generally indicates a closed port.
+- Does not normally complete the full TCP handshake.
+- Is also called a **half-open scan**.
+
+A SYN Scan is widely used, but it is not guaranteed to be undetectable.
+
+### UDP Scan (`-sU`)
+
+```bash
+sudo nmap -sU <TARGET_IP>
+```
+
+- Scans UDP ports.
+- UDP does not use the TCP three-way handshake.
+- An appropriate UDP response can indicate an open port.
+- An ICMP Port Unreachable response can indicate a closed port.
+- No response may result in an `open|filtered` classification.
+
+UDP scans can take longer because many UDP services do not respond to empty or unexpected probes.
+
+### Selecting Ports
+
+Scan specific ports:
+
+```bash
+nmap -p 22,80,443 <TARGET_IP>
+```
+
+Scan ports 1–1023:
+
+```bash
+nmap -p 1-1023 <TARGET_IP>
+```
+
+Scan all TCP ports:
+
+```bash
+nmap -p- <TARGET_IP>
+```
+
+Scan a smaller selection of commonly used ports:
+
+```bash
+nmap -F <TARGET_IP>
+```
+
+Scan the top 10 commonly used ports:
+
+```bash
+nmap --top-ports 10 <TARGET_IP>
+```
+
+**Important:** `-p-` selects ports 1–65535 for the selected protocol. With the default TCP scan, this means all TCP ports. To scan all TCP and UDP ports, the protocols must be selected appropriately, for example with `-sS -sU -p T:1-65535,U:1-65535`.
+
+`-F` is a Fast Scan option. The ports scanned depend on the selected protocol and Nmap's port-frequency data.
+
+## 4. Timing and Performance
+
+### Timing Templates
+
+| Option | Name | General Behavior |
+|---|---|---|
+| `-T0` | Paranoid | Extremely slow timing. |
+| `-T1` | Sneaky | Very slow timing. |
+| `-T2` | Polite | Slower scanning intended to reduce network load. |
+| `-T3` | Normal | Default timing template. |
+| `-T4` | Aggressive | Faster scanning, often suitable for reliable networks. |
+| `-T5` | Insane | Very fast scanning that may sacrifice reliability. |
+
+Example:
+
+```bash
+sudo nmap -sS -T4 <TARGET_IP>
+```
+
+The best timing template depends on network reliability, target responsiveness, and the purpose of the scan.
+
+### Packet Rate
+
+Set a desired minimum packet rate:
+
+```bash
+nmap --min-rate 100 <TARGET_IP>
+```
+
+Set a maximum packet rate:
+
+```bash
+nmap --max-rate 50 <TARGET_IP>
+```
+
+- `--min-rate` requests a minimum average sending rate; Nmap may not achieve it.
+- `--max-rate` limits the approximate packet sending rate.
+
+### Probe Parallelism
+
+- `--min-parallelism`: Sets a lower target for parallel probes.
+- `--max-parallelism`: Limits the number of parallel probes.
+
+Packet rate and parallelism are related but different. Packet rate concerns how quickly packets are sent, while parallelism concerns how many probes are handled concurrently.
+
+Higher scan speeds can increase network load, packet loss, and the likelihood of triggering monitoring systems. Use these settings responsibly in authorized environments.
+
+## 5. Advanced TCP Scans
+
+Advanced TCP scans use different TCP flag combinations to study port responses and filtering behavior.
+
+| Option | Scan Type | TCP Flags or Purpose |
+|---|---|---|
+| `-sN` | Null Scan | No TCP flags set. |
+| `-sF` | FIN Scan | FIN flag set. |
+| `-sX` | Xmas Scan | FIN, PSH, and URG flags set. |
+| `-sM` | Maimon Scan | FIN and ACK flags set. |
+| `-sA` | ACK Scan | Investigates filtering behavior. |
+| `-sW` | Window Scan | Examines TCP Window values in RST responses. |
+| `--scanflags` | Custom Scan | Specifies a custom TCP flag combination. |
+
+Examples:
+
+```bash
+sudo nmap -sN <TARGET_IP>
+sudo nmap -sA <TARGET_IP>
+sudo nmap -sW <TARGET_IP>
+```
+
+### Important Limitations
+
+- A closed port commonly responds with RST to Null, FIN, and Xmas probes.
+- An open port may not respond to these probes on systems following the expected TCP behavior.
+- A lack of response can produce an `open|filtered` result.
+- ACK Scan results can help distinguish filtered from unfiltered ports, but do not reliably establish whether a port is open.
+- Window Scan results depend on operating-system behavior.
+- Firewall rules and network conditions can change the observed results.
+
+**Remember:** An `unfiltered` result from an ACK Scan is not proof that the port is open.
+
+### Custom TCP Flags
+
+```bash
+sudo nmap --scanflags RSTSYNFIN <TARGET_IP>
+```
+
+This example sets RST, SYN, and FIN flags. Custom flag combinations require careful interpretation because unusual probes may be handled differently by different systems.
+
+## 6. Firewall, IDS, and Related Options
+
+### Security Components
+
+**Firewall:** Enforces traffic-control rules to allow, reject, or drop network traffic.
+
+**IDS (Intrusion Detection System):** Monitors activity for suspicious patterns and generates alerts.
+
+**IPS (Intrusion Prevention System):** Can detect suspicious activity and take preventive action, such as blocking traffic.
+
+| Component | Primary Function |
+|---|---|
+| Firewall | Enforces traffic-control rules. |
+| IDS | Detects and reports suspicious activity. |
+| IPS | Detects and can actively prevent suspicious activity. |
+
+### Related Nmap Options
+
+| Option | Purpose |
+|---|---|
+| `-Pn` | Skips normal host discovery and proceeds as though the target is online. |
+| `-e <INTERFACE>` | Specifies the network interface to use. |
+| `-S <IP>` | Specifies the source IP address. |
+| `--spoof-mac` | Specifies a source MAC address. |
+| `-D` | Specifies decoy addresses. |
+| `-sI` | Performs an Idle Scan using a suitable intermediary host. |
+| `-f`, `-ff` | Requests IP packet fragmentation. |
+| `--mtu <SIZE>` | Specifies a fragmentation-related size setting. |
+| `--source-port <PORT>` | Specifies a source port for supported probes. |
+| `--data-length <NUM>` | Adds extra data bytes to supported probes. |
+| `--reason` | Displays the reason for a state classification. |
+| `-v`, `-vv` | Increases output verbosity. |
+| `-d`, `-dd` | Enables additional debugging output. |
+
+These options change scan behavior, but none guarantees that traffic will evade detection or filtering.
+
+### Source IP Specification
+
+```bash
+sudo nmap -S <SOURCE_IP> <TARGET_IP>
+```
+
+The target may send responses to the specified source address. If the scanning system cannot receive those responses, scan results may be incomplete.
+
+### MAC Address Specification
+
+```bash
+sudo nmap --spoof-mac <MAC_ADDRESS> <TARGET_IP>
+```
+
+MAC addresses operate at the data-link layer and are primarily relevant to local network delivery. Routers normally replace link-layer frames when forwarding packets to other networks.
+
+### Decoy Scanning
+
+```bash
+sudo nmap -D <DECOY_1>,<DECOY_2>,ME <TARGET_IP>
+```
+
+- `-D` specifies decoy addresses.
+- `ME` includes the actual scanning address.
+- `RND` requests a randomly generated decoy address.
+
+Decoys can complicate attribution but do not guarantee anonymity.
+
+### Idle Scanning
+
+```bash
+sudo nmap -sI <ZOMBIE_IP> <TARGET_IP>
+```
+
+An Idle Scan attempts to infer target port states through a third-party host called a *zombie*. It relies on suitable IP ID behavior and can be unreliable if the zombie generates unpredictable IDs or has unrelated traffic.
+
+Any simplified IP ID interpretation should be treated as scenario-dependent rather than a universal rule.
+
+### IP Fragmentation
+
+```bash
+sudo nmap -sS -p 80 -f <TARGET_IP>
+```
+
+- `-sS`: SYN Scan.
+- `-p 80`: Selects TCP port 80.
+- `-f`: Requests IP packet fragmentation.
+
+The `-ff` option requests additional fragmentation, while `--mtu <SIZE>` allows a custom fragmentation size subject to Nmap's requirements.
+
+IP fragmentation involves fields such as:
+
+- **Identification:** Helps associate fragments with the original IP datagram.
+- **Fragment Offset:** Identifies the position of fragment data.
+- **More Fragments flag:** Indicates whether additional fragments follow.
+
+Fragmentation does not guarantee that packets will pass through security controls. Firewalls and IDS/IPS systems may reassemble, normalize, detect, or block fragmented traffic.
+
+## 7. Service and Version Detection
+
+### Version Detection (`-sV`)
+
+```bash
+sudo nmap -sV <TARGET_IP>
+```
+
+Attempts to identify the services running on open ports and determine their software versions.
+
+### Version Detection Intensity
+
+Light version detection:
+
+```bash
+sudo nmap -sV --version-light <TARGET_IP>
+```
+
+- Uses intensity level 2.
+- Uses fewer, more likely probes.
+- Can reduce scan time.
+
+All version-detection probes:
+
+```bash
+sudo nmap -sV --version-all <TARGET_IP>
+```
+
+- Uses intensity level 9.
+- Tries all available version-detection probes.
+- May require more time and generate additional traffic.
+
+Version detection intensity is not a vulnerability severity score. Service and version identification can also be incomplete or inaccurate.
+
+## 8. Operating System Detection
+
+```bash
+sudo nmap -O <TARGET_IP>
+```
+
+Nmap estimates the target operating system by analyzing network responses and TCP/IP fingerprint characteristics.
+
+### Common Initial TTL Values
+
+| Operating System Family | Common Initial TTL |
+|---|---:|
+| Linux | Often 64 |
+| Windows | Often 128 |
+
+TTL stands for **Time To Live**. In IPv4, routers decrease TTL as packets are forwarded, so the value observed by a scanner may be lower than the initial value.
+
+TTL alone cannot confirm an operating system. Firewalls, virtual machines, cloud networking, customized systems, and network devices can affect the result.
+
+The message `No exact OS matches for host` means Nmap could not find a sufficiently close fingerprint match in its database. It does not mean that the target has no operating system.
+
+## 9. Traceroute
+
+```bash
+sudo nmap --traceroute <TARGET_IP>
+```
+
+Traceroute attempts to identify intermediate network hops between the scanning system and the target.
+
+**Key terms:**
+
+- **Hop:** One step in a network route, often involving a router.
+- **RTT (Round-Trip Time):** The measured time for a probe and its response to travel between endpoints.
+
+Some routers or firewalls suppress diagnostic responses, so not every hop will necessarily appear.
+
+### OS Detection vs. Traceroute
+
+| Option | Purpose |
+|---|---|
+| `-O` | Estimates the target operating system. |
+| `--traceroute` | Investigates the network route to the target. |
+
+## 10. Nmap Scripting Engine (NSE)
+
+The **Nmap Scripting Engine (NSE)** extends Nmap using Lua-based scripts. Scripts can collect additional information and perform a variety of checks.
+
+Common script directory on many Linux installations:
+
+```bash
+/usr/share/nmap/scripts
+```
+
+List HTTP-related script files:
+
+```bash
+ls /usr/share/nmap/scripts/http*
+```
+
+The directory may differ depending on the operating system or installation method.
+
+### Default Scripts
+
+```bash
+sudo nmap -sC <TARGET_IP>
+```
+
+Equivalent:
+
+```bash
+sudo nmap --script=default <TARGET_IP>
+```
+
+These commands run scripts from the default category. They do not run every script in the NSE collection.
+
+### Run a Specific Script
+
+```bash
+sudo nmap --script="http-robots.txt" <TARGET_IP>
+```
+
+The `http-robots.txt` script retrieves and examines a website's `robots.txt` file when the relevant HTTP service is accessible.
+
+A `robots.txt` file contains instructions intended for web crawlers. It is not an access-control mechanism, and paths listed in it may still be accessible.
+
+### Script Wildcards
+
+```bash
+sudo nmap --script="ftp*" <TARGET_IP>
+```
+
+This selects scripts whose names match the specified pattern. Wildcards can match multiple scripts, including scripts that may have intrusive effects.
+
+Inspect a script's source:
+
+```bash
+less /usr/share/nmap/scripts/http-date.nse
+```
+
+### Important NSE Categories
+
+| Category | Purpose |
+|---|---|
+| `auth` | Authentication-related checks. |
+| `broadcast` | Broadcast-based discovery. |
+| `brute` | Brute-force testing. |
+| `default` | Scripts selected for the default category. |
+| `discovery` | Collects information about accessible systems and services. |
+| `dos` | Denial-of-service-related checks. |
+| `exploit` | Exploitation-related checks. |
+| `external` | Interacts with external services. |
+| `fuzzer` | Tests responses to unusual or malformed inputs. |
+| `intrusive` | Checks that may have disruptive effects. |
+| `malware` | Checks for certain malware or backdoor indicators. |
+| `safe` | Scripts generally considered non-intrusive. |
+| `version` | Supports service-version detection. |
+| `vuln` | Performs vulnerability-related checks. |
+
+**Caution:** A `safe` classification is not a zero-risk guarantee. Scripts in categories such as `brute`, `dos`, `exploit`, and `intrusive` may affect services. Use them only against authorized targets.
+
+## 11. Saving Scan Results
+
+Nmap supports multiple output formats for reviewing results and processing them with other tools.
+
+### Normal Output (`-oN`)
+
+```bash
+sudo nmap -oN scan.nmap <TARGET_IP>
+```
+
+Saves human-readable output to `scan.nmap`.
+
+Read the saved file:
+
+```bash
+cat scan.nmap
+```
+
+### Grepable Output (`-oG`)
+
+```bash
+sudo nmap -oG scan.gnmap <TARGET_IP>
+```
+
+This format supports simple text searches and processing with tools such as `grep`.
+
+Example:
+
+```bash
+grep http scan.gnmap
+```
+
+Grepable output is a legacy format; XML is generally more suitable for structured programmatic processing.
+
+### XML Output (`-oX`)
+
+```bash
+sudo nmap -oX scan.xml <TARGET_IP>
+```
+
+Saves structured XML output for software tools and scripts.
+
+### Save All Three Main Formats (`-oA`)
+
+```bash
+sudo nmap -oA scan <TARGET_IP>
+```
+
+This creates files using the prefix `scan`:
+
+- `scan.nmap` — Normal output.
+- `scan.gnmap` — Grepable output.
+- `scan.xml` — XML output.
+
+### Script Kiddie Output (`-oS`)
+
+```bash
+nmap -oS scan.txt <TARGET_IP>
+```
+
+Produces a stylized, leetspeak-like output format. It is generally not useful for normal security analysis.
+
+## 12. Comprehensive Scanning (`-A`)
+
+```bash
+sudo nmap -A <TARGET_IP>
+```
+
+The `-A` option enables several advanced features:
+
+- `-sV` — Service and version detection.
+- `-O` — Operating system detection.
+- `-sC` — Default NSE scripts.
+- `--traceroute` — Network route discovery.
+
+`-A` does not enable every Nmap feature. It can generate more probes and traffic than a basic scan.
+
+Use it when the additional information is appropriate for the authorized assessment.
+
+## 13. Practical Nmap Workflow
+
+A typical workflow for an authorized TryHackMe target can be organized as follows.
+
+### Step 1: Perform a Basic Scan
+
+```bash
+nmap <TARGET_IP>
+```
+
+Review the discovered ports and their reported states.
+
+### Step 2: Investigate Selected Ports
+
+```bash
+sudo nmap -sV -sC -p<PORTS> <TARGET_IP>
+```
+
+Replace `<PORTS>` with the actual port numbers discovered in the initial scan.
+
+This command attempts service/version detection and runs default NSE scripts against the selected ports.
+
+### Step 3: Estimate the Operating System if Needed
+
+```bash
+sudo nmap -O <TARGET_IP>
+```
+
+Use the result as an estimate rather than definitive proof.
+
+### Step 4: Investigate the Network Route if Needed
+
+```bash
+sudo nmap --traceroute <TARGET_IP>
+```
+
+Examine the visible hops and response times.
+
+### Step 5: Save the Results
+
+```bash
+sudo nmap -oA scan <TARGET_IP>
+```
+
+Saving results makes it easier to review findings, compare scans, and document the assessment.
+
+Not every scan requires every option. Choose commands according to the assessment objective and the permissions available.
+
+## 14. Quick Revision Table
+
+| Option | Purpose |
+|---|---|
+| `-sT` | TCP Connect Scan. |
+| `-sS` | TCP SYN Scan. |
+| `-sU` | UDP Scan. |
+| `-p-` | Selects all ports for the selected protocol. |
+| `-F` | Fast Scan using a smaller selection of common ports. |
+| `--top-ports 10` | Selects the top 10 commonly used ports. |
+| `-T4` | Faster timing template, often useful on reliable networks. |
+| `-sN` | Null Scan. |
+| `-sF` | FIN Scan. |
+| `-sX` | Xmas Scan. |
+| `-sM` | Maimon Scan. |
+| `-sA` | ACK Scan. |
+| `-sW` | Window Scan. |
+| `--scanflags` | Custom TCP flag combinations. |
+| `-Pn` | Skips normal host discovery. |
+| `-S` | Specifies the source IP address. |
+| `--spoof-mac` | Specifies a source MAC address. |
+| `-D` | Decoy scanning. |
+| `-sI` | Idle Scan. |
+| `-f`, `-ff` | Requests IP packet fragmentation. |
+| `--source-port` | Specifies the source port. |
+| `--data-length` | Adds extra data bytes to supported probes. |
+| `-sV` | Service and version detection. |
+| `--version-light` | Uses version-detection intensity 2. |
+| `--version-all` | Uses version-detection intensity 9. |
+| `-O` | Operating system detection. |
+| `--traceroute` | Investigates network hops. |
+| `-sC` | Runs default NSE scripts. |
+| `--script=<NAME>` | Selects NSE scripts. |
+| `-A` | Enables service detection, OS detection, default scripts, and traceroute. |
+| `-oN` | Saves normal output. |
+| `-oG` | Saves grepable output. |
+| `-oX` | Saves XML output. |
+| `-oA` | Saves the three main output formats. |
+| `--reason` | Displays the reason for a state classification. |
+| `-v`, `-vv` | Increases verbosity. |
+| `-d`, `-dd` | Increases debugging output. |
+
+## 15. Key Takeaways
+
+1. Nmap discovers hosts, investigates ports, identifies services, and gathers network information.
+2. An open port indicates that an application is accepting connections or responding; it does not automatically mean the service is vulnerable.
+3. `-sV` detects service versions, while `-O` estimates the operating system.
+4. `-sC` runs default NSE scripts; `--script` selects specific scripts or script sets.
+5. `--traceroute` investigates the route to a target.
+6. `-A` combines service detection, OS detection, default scripts, and traceroute.
+7. `-oN`, `-oG`, and `-oX` save different output formats, while `-oA` saves all three main formats.
+8. An `unfiltered` port is not necessarily open, and an `open|filtered` result is ambiguous.
+9. UDP scans and several advanced TCP scans can produce ambiguous results because of filtering, packet loss, and operating-system behavior.
+10. Nmap findings should be interpreted in context rather than treated as definitive proof.
+
+## 16. Authorization and Responsible Use
+
+Perform scans only against systems you own or have explicit permission to assess. Advanced scans and NSE scripts can generate security alerts, increase network traffic, or affect services.
+
+For practice, use authorized environments such as TryHackMe rooms, intentionally vulnerable lab machines, or an isolated test network.
