@@ -57,3 +57,14 @@ I want to document my cybersecurity journey, track what I have learned, and buil
 This repository is a record of my **learning process**, not a claim that everything here is perfect.
 
 > Learn → Understand → Practice → Document → Improve
+
+
+##About the Notes 
+## Repository Structure
+
+The repository is organized into folders based on learning paths and topics to make the documentation easier to navigate.
+
+- **JPT** — Notes related to network reconnaissance, Nmap, and web application security.
+- **THM CS101** — Documentation for selected Cyber Security 101 modules.
+- **Standalone Notes** — Documentation covering networking protocols, Windows fundamentals, Active Directory, Wireshark, cryptography, hashing, password security, and other topics.
+
