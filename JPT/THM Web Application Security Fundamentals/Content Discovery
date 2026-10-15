@@ -1,0 +1,605 @@
+# Web Application Reconnaissance and Content Discovery — Complete Documentation
+
+## 1. Page Source
+
+Page Source displays the original HTML document delivered by the web server to the browser.
+
+**Shortcut:** `Ctrl + U`
+
+### What to Look For
+
+- HTML comments: `<!-- comment -->`
+- Links to hidden or less-visible pages
+- References to directories and files
+- Framework or software version information
+- Developer comments that reveal implementation details
+
+**Security note:** Finding hidden information in page source does not automatically indicate a vulnerability. The information must be assessed in context.
+
+---
+
+## 2. Browser Developer Tools
+
+Browser Developer Tools help developers and security testers inspect, debug, and understand web applications.
+
+**Shortcut:** `F12` or `Ctrl + Shift + I` in most desktop browsers.
+
+### 2.1 Inspector / Elements
+
+The Inspector displays the live Document Object Model (DOM) and the CSS rules applied to page elements.
+
+Common uses:
+
+- Inspect HTML elements and their properties.
+- Examine CSS styles.
+- Temporarily modify the DOM or CSS.
+- Investigate how page elements are displayed.
+
+Example:
+
+```css
+display: none;
+```
+
+Changing this to:
+
+```css
+display: block;
+```
+
+may make an element visible in the browser.
+
+**Important:** Changing the DOM or CSS affects the local browser presentation. It does not grant server-side authorization or access to protected data that the server refuses to provide.
+
+### 2.2 Debugger / Sources
+
+The Debugger helps inspect JavaScript and understand how client-side code executes.
+
+Useful features:
+
+- Set breakpoints.
+- Pause JavaScript execution.
+- Inspect variables and execution state.
+- Review JavaScript source files.
+- Use Pretty Print `{ }` to format minified JavaScript.
+
+**Minification** removes unnecessary whitespace and shortens code to reduce file size. **Obfuscation** deliberately makes code harder to understand. Pretty Print can improve formatting, but it does not reverse obfuscation automatically.
+
+### 2.3 Network
+
+The Network panel records communication between the browser and the server.
+
+It can display:
+
+- HTTP requests and responses
+- Request and response headers
+- Request payloads
+- Response bodies
+- Status codes and timing information
+- AJAX and Fetch API requests
+
+AJAX allows a page to exchange data with a server without requiring a full page reload.
+
+### 2.4 Storage
+
+The Storage panel helps inspect browser-side storage mechanisms.
+
+| Storage Type | Purpose |
+|---|---|
+| Local Storage | Stores key-value data that generally persists across browser sessions |
+| Session Storage | Stores data associated with a browser tab's session |
+| Cookies | Stores small pieces of data that may be sent with matching HTTP requests |
+| Cache Storage | Stores cached request/response pairs, commonly used by service workers |
+
+#### Important Cookie Security Attributes
+
+| Attribute | Purpose |
+|---|---|
+| `HttpOnly` | Prevents ordinary client-side JavaScript APIs from reading the cookie |
+| `Secure` | Restricts cookie transmission to secure HTTPS connections |
+| `SameSite` | Controls when cookies are sent with cross-site requests and can help mitigate CSRF |
+
+These attributes reduce certain risks but do not guarantee that an application is secure. Their effectiveness depends on the application design and configuration.
+
+**Never share real session cookies or authentication tokens.**
+
+---
+
+## 3. `robots.txt` and `sitemap.xml`
+
+### 3.1 `robots.txt`
+
+The `robots.txt` file provides instructions to web crawlers about which URL paths they should or should not crawl.
+
+Example:
+
+```text
+User-agent: *
+Allow: /
+Disallow: /staff-portal
+```
+
+- `User-agent`: Identifies the crawler to which a rule applies.
+- `Allow`: Indicates paths that the crawler may access.
+- `Disallow`: Requests that the crawler avoid specified paths.
+
+The exact handling of rules can vary between crawlers.
+
+**Security note:** `robots.txt` is not an access-control mechanism. A disallowed path may still be accessible directly. Sensitive resources must be protected by proper server-side authentication and authorization.
+
+### 3.2 `sitemap.xml`
+
+A sitemap lists URLs that a website wants search engines to discover.
+
+Example URL paths:
+
+```text
+/news
+/contact
+/customers/login
+```
+
+Sitemaps can reveal pages that are not immediately visible through the main navigation. However, a sitemap does not necessarily contain every URL on a website.
+
+---
+
+## 4. HTTP Headers and Technology Identification
+
+The `curl` command-line tool can send HTTP requests and display information about the server's response.
+
+Example:
+
+```bash
+curl http://TARGET-IP -v
+```
+
+- `curl`: Transfers data using supported protocols, including HTTP and HTTPS.
+- `-v`: Displays verbose connection, request, and response information.
+
+Use HTTPS when supported and appropriate for the target.
+
+### Important HTTP Response Information
+
+| Header or Status | Meaning |
+|---|---|
+| `HTTP/1.1 200 OK` | The request was successful |
+| `Server` | May disclose web-server software information |
+| `Content-Type` | Identifies the media type of the response |
+| `X-Powered-By` | May reveal application framework or technology information |
+| Custom headers | May provide application-specific information |
+
+Example:
+
+```http
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+X-Powered-By: THM-Framework
+Content-Type: text/html
+```
+
+Headers can provide technology-identification clues. However, headers may be removed, customized, or inaccurate.
+
+**A disclosed version number is not, by itself, proof of a vulnerability.** Confirm the technology, determine the relevant version, and assess whether an applicable security issue exists.
+
+### Authorized Lab Workflow
+
+1. Inspect the response headers.
+2. Review the page source for additional clues.
+3. Identify the likely web server or framework.
+4. Consult relevant documentation.
+5. Explore application features and administrative interfaces within the authorized lab scope.
+
+Do not attempt default credentials or access restricted administrative systems unless the activity is explicitly authorized.
+
+---
+
+## 5. OSINT — Open-Source Intelligence
+
+Open-Source Intelligence (OSINT) is the process of collecting and analyzing information from publicly available sources.
+
+### 5.1 Google Search Operators
+
+Search operators help narrow search results.
+
+| Operator | Purpose |
+|---|---|
+| `site:example.com` | Restricts results to a domain |
+| `inurl:admin` | Searches for pages with `admin` in the URL |
+| `intitle:admin` | Searches for pages with `admin` in the title |
+| `filetype:pdf` | Searches for PDF files |
+| `intext:password` | Searches for pages containing the specified text |
+
+Example:
+
+```text
+site:tryhackme.com filetype:pdf
+```
+
+Search results depend on what the search engine has indexed. These operators do not reveal every resource on a website.
+
+Use search techniques within an appropriate, lawful scope. Finding exposed information does not authorize access to it or its use.
+
+### 5.2 Wappalyzer
+
+Wappalyzer helps identify technologies used by a website, potentially including:
+
+- Content management systems (CMSs)
+- Application frameworks
+- JavaScript libraries
+- Analytics tools
+- Content delivery networks (CDNs)
+- Some software versions
+
+Website: https://www.wappalyzer.com/
+
+Technology detection is based on observable signals and may be incomplete or inaccurate.
+
+### 5.3 Wayback Machine
+
+The Internet Archive's Wayback Machine provides archived snapshots of many websites.
+
+Website: https://web.archive.org/
+
+Archived content can help researchers understand historical website structure, previously published pages, and changes over time.
+
+Not every page or historical version is available. Archived information may also be outdated.
+
+### 5.4 GitHub
+
+Public Git repositories, source files, and commit histories can reveal implementation details.
+
+In some cases, a secret removed from the latest version remains present in an earlier commit.
+
+If a real credential or token is discovered:
+
+- Do not use it to access an account or service.
+- Do not publish or redistribute it.
+- Report it through the appropriate security contact or disclosure process.
+
+### 5.5 Amazon S3
+
+Amazon Simple Storage Service (Amazon S3) is an object-storage service.
+
+Example bucket-name patterns might include:
+
+```text
+company-assets
+company-backup
+company-dev
+```
+
+Bucket names and publicly discoverable URLs can provide clues about an organization's infrastructure, but neither proves that the bucket is publicly accessible or vulnerable.
+
+Assess storage permissions only when explicitly authorized. Do not access, download, or modify data outside the approved scope.
+
+---
+
+## 6. Gobuster — Automated Content Discovery
+
+Gobuster is a command-line tool that uses wordlists to discover web paths, DNS subdomains, and virtual hosts.
+
+### Wordlists
+
+A common SecLists installation path on Linux is:
+
+```text
+/usr/share/wordlists/SecLists/
+```
+
+Useful wordlists include:
+
+```text
+Discovery/Web-Content/common.txt
+Discovery/Web-Content/directory-list-2.3-medium.txt
+Discovery/DNS/subdomains-top1million-5000.txt
+```
+
+The exact location depends on the operating system and installation method.
+
+### 6.1 `dir` Mode — Directory and File Discovery
+
+Example:
+
+```bash
+gobuster dir \
+  -u "http://TARGET-IP" \
+  -w /usr/share/wordlists/SecLists/Discovery/Web-Content/common.txt
+```
+
+This mode tests candidate paths against the target web server.
+
+#### Common Options
+
+| Option | Purpose |
+|---|---|
+| `-u` | Specifies the target URL |
+| `-w` | Specifies the wordlist |
+| `-t 10` | Sets the number of concurrent threads |
+| `-o results.txt` | Writes results to an output file |
+| `-x .php,.txt,.js` | Tests additional file extensions |
+| `-r` | Follows redirects |
+| `-k` | Skips TLS certificate verification; use only when appropriate in an authorized lab |
+
+Option availability and behavior can vary by Gobuster version. Consult the installed version's help output:
+
+```bash
+gobuster dir --help
+```
+
+#### Common HTTP Status Codes
+
+| Code | Meaning |
+|---|---|
+| `200 OK` | The request succeeded |
+| `301 Moved Permanently` | The resource has a permanent redirect |
+| `302 Found` | A temporary redirect is indicated |
+| `403 Forbidden` | The server refuses the request |
+| `404 Not Found` | The requested resource was not found |
+
+Interpret status codes in context. For example, a `403` response can indicate that a path exists but access is denied; it does not prove that the path contains sensitive information.
+
+Potentially interesting paths might include:
+
+- `development.log`: Could expose debugging or application information if improperly accessible.
+- `/private/`: The name alone does not establish whether access is restricted.
+- `/robots.txt`: May contain crawler instructions and path clues.
+- `/sitemap.xml`: May list discoverable application URLs.
+
+**Discovery is not the same as exploitation.** Validate each finding before drawing a security conclusion.
+
+---
+
+## 7. Gobuster `dns` Mode — Subdomain Enumeration
+
+DNS mode checks wordlist entries as candidate subdomains.
+
+Example:
+
+```bash
+gobuster dns \
+  -d example.thm \
+  -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-5000.txt
+```
+
+#### Common Options
+
+| Option | Purpose |
+|---|---|
+| `-d` | Specifies the base domain |
+| `-w` | Specifies the wordlist |
+| `-i` | Displays resolved IP addresses |
+| `-r` | Specifies a custom DNS resolver |
+| `--wildcard` | Allows enumeration to continue despite wildcard DNS detection |
+
+Check `gobuster dns --help` for version-specific details.
+
+Example candidate subdomains:
+
+```text
+shop.example.thm
+academy.example.thm
+primary.example.thm
+```
+
+A discovered name should be validated against the expected DNS and application behavior.
+
+### Wildcard DNS
+
+With wildcard DNS, otherwise undefined subdomains may resolve to the same address or produce similar responses.
+
+This can create false positives during enumeration.
+
+The `--wildcard` option allows a scan to continue despite wildcard detection, but it does **not** automatically remove false positives. Compare responses and verify findings before treating them as valid subdomains.
+
+---
+
+## 8. DNS Configuration in the TryHackMe AttackBox
+
+Some TryHackMe rooms require a custom DNS resolver or local hostname mapping. Follow the specific room instructions because configuration requirements vary.
+
+### 8.1 Edit the Resolver Configuration
+
+A room may instruct you to edit:
+
+```bash
+sudo nano /etc/resolv-dnsmasq
+```
+
+Example entry:
+
+```text
+nameserver TARGET-IP
+```
+
+Save in Nano using:
+
+1. `Ctrl + O`
+2. Press `Enter`
+3. `Ctrl + X`
+
+Restart the service only if required by the room's setup:
+
+```bash
+sudo /etc/init.d/dnsmasq restart
+```
+
+**Important:** `/etc/resolv-dnsmasq` is not the standard resolver configuration path on every Linux system. Do not assume this file exists or that editing it alone changes the system's active DNS configuration. Follow the lab's exact setup instructions and verify which resolver configuration the system uses.
+
+### 8.2 Update `/etc/hosts`
+
+Edit the local hosts file:
+
+```bash
+sudo nano /etc/hosts
+```
+
+Add a mapping using the current target IP:
+
+```text
+TARGET-IP example.thm
+```
+
+This maps the specified hostname to the specified IP locally.
+
+Test name resolution or connectivity with a suitable tool:
+
+```bash
+getent hosts example.thm
+```
+
+You can also use `ping` where ICMP traffic is supported:
+
+```bash
+ping example.thm
+```
+
+A failed ping does not necessarily mean the hostname failed to resolve, because the target may block ICMP.
+
+### DNS Resolver vs. `/etc/hosts`
+
+| Component | Purpose |
+|---|---|
+| `/etc/hosts` | Provides local, manually configured hostname-to-IP mappings |
+| DNS resolver configuration | Specifies how the system resolves DNS queries |
+
+If a lab target's IP changes, update the configuration with the current IP. Avoid blindly reusing an address from an earlier session.
+
+---
+
+## 9. Gobuster `vhost` Mode — Virtual Host Discovery
+
+Virtual host (vhost) mode sends HTTP requests with candidate hostnames in the `Host` header to identify websites served by the same web server.
+
+Example:
+
+```bash
+gobuster vhost \
+  -u "http://TARGET-IP" \
+  --domain example.thm \
+  -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-5000.txt \
+  --append-domain
+```
+
+#### Common Options
+
+| Option | Purpose |
+|---|---|
+| `-u` | Specifies the target web server URL |
+| `--domain` | Specifies the domain used for virtual-host candidates |
+| `-w` | Specifies the wordlist |
+| `--append-domain` | Appends the domain to candidate names |
+| `--exclude-length` | Excludes responses with specified body lengths, where supported |
+
+Confirm exact syntax with:
+
+```bash
+gobuster vhost --help
+```
+
+### Example
+
+A wordlist entry:
+
+```text
+shop
+```
+
+With the domain appended, the candidate becomes:
+
+```text
+shop.example.thm
+```
+
+The server may return different content depending on the requested hostname, even when all requests are sent to the same IP address.
+
+### Response-Length Filtering
+
+Some scans produce many results because the server returns a similar default page for unknown virtual hosts.
+
+If the installed Gobuster version supports comma-separated exact response lengths, an example is:
+
+```bash
+--exclude-length 200,300
+```
+
+This excludes response bodies of exactly 200 or 300 bytes; it does not exclude every length between those values.
+
+Do not assume that range syntax is supported. Check the installed version's help or documentation for the accepted format.
+
+### Interpreting Results
+
+- `200 OK`: The server returned a successful response, which should be examined in context.
+- Similar response lengths across many candidates: These may be default responses or false positives.
+- No convincing result: The scan did not identify a validated virtual host with the current settings.
+
+A negative result does not prove that no hidden virtual hosts exist. Wordlist coverage, server configuration, filtering, and the HTTP scheme can affect the outcome.
+
+---
+
+## 10. Directory, DNS, and Virtual Host Discovery Compared
+
+| Gobuster Mode | What It Discovers | Method |
+|---|---|---|
+| `dir` | Directories and files | Requests candidate URL paths |
+| `dns` | DNS subdomains | Queries DNS for candidate names |
+| `vhost` | Virtual hosts | Sends HTTP requests with candidate hostnames |
+
+### DNS Subdomain vs. Virtual Host
+
+A DNS subdomain and a virtual host are related but distinct concepts.
+
+- **DNS subdomain:** A hostname that may resolve through DNS to an IP address.
+- **Virtual host:** A web-server configuration that selects a website or application based on the requested hostname, commonly using the HTTP `Host` header.
+
+Multiple virtual hosts can share one IP address. A hostname may also be configured in a web server without having a publicly resolvable DNS record.
+
+---
+
+## 11. Practical Reconnaissance Workflow
+
+For an explicitly authorized TryHackMe target:
+
+1. Review the page source and browser Developer Tools.
+2. Inspect `robots.txt` and `sitemap.xml`, if available.
+3. Use `curl` to examine HTTP response information.
+4. Identify potential technologies using observable evidence.
+5. Gather additional context from appropriate public sources.
+6. Use Gobuster `dir` mode to discover candidate paths.
+7. Use Gobuster `dns` mode to enumerate candidate DNS subdomains.
+8. Use Gobuster `vhost` mode when virtual-host discovery is relevant.
+9. Configure lab-specific DNS or hostname mappings according to the room instructions.
+10. Validate findings and document the evidence, limitations, and security impact.
+
+Use conservative scan settings and remain within the explicitly authorized scope.
+
+---
+
+## 12. Quick Revision
+
+1. **Page Source:** Displays the original HTML document.
+2. **Inspector:** Examines the live DOM and CSS.
+3. **Debugger:** Helps inspect JavaScript execution and breakpoints.
+4. **Network panel:** Shows browser requests and server responses.
+5. **Storage panel:** Helps inspect cookies and browser-side storage.
+6. **`robots.txt`:** Provides crawler instructions, not access control.
+7. **`sitemap.xml`:** Lists URLs intended for discovery by search engines.
+8. **`curl -v`:** Displays verbose connection and HTTP details.
+9. **OSINT:** Collects and analyzes publicly available information.
+10. **Gobuster `dir`:** Discovers candidate directories and files.
+11. **Gobuster `dns`:** Enumerates candidate DNS subdomains.
+12. **Gobuster `vhost`:** Tests candidate virtual hosts using HTTP hostnames.
+13. **`/etc/hosts`:** Provides local hostname-to-IP mappings.
+14. **DNS resolver:** Determines how DNS queries are resolved.
+15. **`200 OK`:** Indicates a successful HTTP response, not a confirmed vulnerability.
+16. **Discovery is not exploitation:** Every finding requires validation.
+
+## Key Takeaways
+
+- Browser-side changes do not establish server-side authorization.
+- Technology fingerprints and software versions are clues, not proof of vulnerabilities.
+- `robots.txt`, sitemaps, archives, and public repositories can provide reconnaissance information.
+- Directory discovery, DNS enumeration, and virtual-host discovery use different techniques.
+- Wildcard DNS and default web-server responses can produce false positives.
+- Always verify findings and document the evidence supporting each conclusion.
+
+**Authorized-use note:** Perform active enumeration, DNS configuration changes, and virtual-host testing only in TryHackMe labs or against systems for which explicit authorization has been granted.
