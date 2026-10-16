@@ -1,0 +1,410 @@
+# Web Server Attacks I 
+
+## 1. Overview
+
+This TryHackMe room explores common web server misconfigurations across four web servers running on the same machine:
+
+- **Apache** — Port 80
+- **Python HTTP Server** — Port 8000
+- **Node.js Express** — Port 3000
+- **Nginx** — Port 8080
+
+The main objective is to identify information disclosure, exposed files, directory listing, debug endpoints, verbose error messages, and missing HTTP security headers.
+
+**Key principle:** Different web servers can have similar security weaknesses when they are configured insecurely.
+
+## 2. Web Server Fingerprinting
+
+Web server fingerprinting identifies the software running behind an HTTP service and may reveal its version.
+
+### Commands
+
+```bash
+curl -sI http://TARGET_IP:80
+curl -sI http://TARGET_IP:8000
+curl -sI http://TARGET_IP:3000
+curl -sI http://TARGET_IP:8080
+```
+
+**Options:**
+
+- `curl` sends HTTP requests.
+- `-s` suppresses progress output.
+- `-I` requests response headers using the HTTP HEAD method.
+
+Common indicators include:
+
+| Server | Possible indicator |
+|---|---|
+| Apache | `Server: Apache/...` |
+| Python HTTP Server | `SimpleHTTP/0.6 Python/...` |
+| Express | `X-Powered-By: Express` |
+| Nginx | `Server: nginx/...` |
+
+**Security impact:** Version disclosure may help an attacker identify software and research relevant vulnerabilities.
+
+**Limitation:** Headers can be removed or modified. A server banner alone does not prove that the software is vulnerable.
+
+## 3. Python HTTP Server Misconfiguration
+
+Python's built-in HTTP server can be started with:
+
+```bash
+python3 -m http.server 8000
+```
+
+By default, it serves files from the current working directory.
+
+### 3.1 Directory Listing
+
+```bash
+curl -s http://TARGET_IP:8000/
+```
+
+If directory listing is enabled, the response may reveal filenames and downloadable resources.
+
+### 3.2 Downloading and Inspecting a Backup
+
+```bash
+curl -s http://TARGET_IP:8000/backup.zip -o backup.zip
+unzip backup.zip -d backup-contents/
+cat backup-contents/db_dump.sql
+```
+
+- `-o backup.zip` saves the response to a local file.
+- `unzip` extracts the archive.
+- `cat` displays the SQL dump's contents.
+
+These commands assume the file exists, the response contains the expected archive, and the required utilities are installed.
+
+### 3.3 Common Risks
+
+- Exposed `.env` files
+- Database dumps and backup archives
+- Source code and configuration files
+- Sensitive files inside the served directory
+
+Dotfiles are hidden by many Linux directory-listing commands, but this does not automatically protect them over HTTP. If the server exposes a file and the client knows its URL, direct access may be possible.
+
+Python's built-in HTTP server is intended primarily for simple development and testing. It does not provide application-level user authentication by default.
+
+### Remediation
+
+- Avoid exposing development servers publicly.
+- Serve only the intended public directory.
+- Keep credentials, backups, and private files outside the served directory.
+- Use appropriate access controls and a production-ready deployment.
+
+## 4. Apache Misconfiguration
+
+Apache is a widely used web server. Its effective configuration determines which directories, files, and status endpoints are accessible.
+
+### 4.1 Server Version Disclosure
+
+```bash
+curl -sI http://TARGET_IP:80 | grep -i server
+```
+
+The response may reveal the Apache version or other server information.
+
+**Risk:** This information can help guide vulnerability research.
+
+### 4.2 Directory Listing
+
+```bash
+curl -s http://TARGET_IP:80/files/
+```
+
+If directory indexing is enabled, Apache may return an `Index of /files` page containing filenames, file sizes, and modification dates.
+
+**Risk:** Attackers may discover backup archives, internal notes, or files that were not intended to be public.
+
+### 4.3 Apache Server Status
+
+```bash
+curl -s http://TARGET_IP:80/server-status
+curl -sI http://TARGET_IP:80/server-status
+```
+
+- The first command requests the response body.
+- The second requests response headers only.
+
+If the `mod_status` endpoint is enabled and accessible, it may reveal active requests, worker states, request statistics, and operational details.
+
+Status endpoints should generally be restricted to authorized administrators and monitoring systems.
+
+### 4.4 Directory and File Enumeration with Gobuster
+
+```bash
+gobuster dir \
+  -u http://TARGET_IP:80 \
+  -w /usr/share/wordlists/seclists/Discovery/Web-Content/common.txt \
+  -x bak,txt \
+  -t 20
+```
+
+**Options:**
+
+- `dir` — directory and file discovery mode
+- `-u` — target URL
+- `-w` — wordlist path
+- `-x bak,txt` — test filenames with the specified extensions
+- `-t 20` — use 20 concurrent threads
+
+Common HTTP status codes:
+
+| Status Code | Meaning |
+|---|---|
+| 200 | Successful response |
+| 301 | Permanent redirect |
+| 403 | Access forbidden |
+| 404 | Resource not found |
+
+A status code must be interpreted in context. For example, a 403 response does not conclusively prove that a specific file exists.
+
+### Remediation
+
+- Disable directory indexing when unnecessary.
+- Restrict access to `/server-status`.
+- Remove sensitive backups from the public document root.
+- Minimize unnecessary server-version disclosure.
+- Keep Apache and its modules updated.
+
+## 5. Node.js Express Misconfiguration
+
+Express is a web framework for Node.js. An **endpoint** is a URL path that provides application functionality.
+
+For example, `/api/users` might return user information, while `/api/routes` might expose application routes if the developer has implemented such functionality.
+
+### 5.1 Identify Express
+
+```bash
+curl -sI http://TARGET_IP:3000
+```
+
+A response containing `X-Powered-By: Express` may identify the framework.
+
+### 5.2 Inspect an API Endpoint
+
+```bash
+curl -i http://TARGET_IP:3000/api/users
+```
+
+The `-i` option includes the HTTP response headers in the output.
+
+A response containing status code 500, stack traces, internal paths, or database details may indicate verbose error disclosure.
+
+### 5.3 Format JSON Output
+
+```bash
+curl -s http://TARGET_IP:3000/api/users | python3 -m json.tool
+```
+
+This formats valid JSON to make it easier to read.
+
+An error such as `ECONNREFUSED 127.0.0.1:5432` indicates that a connection attempt to the PostgreSQL service was refused. It does not, by itself, establish the exact reason the service was unavailable.
+
+If the response also reveals stack traces, source paths, or SQL queries, these details may create additional information-disclosure risks.
+
+### 5.4 Route Enumeration
+
+```bash
+curl -s http://TARGET_IP:3000/api/routes
+```
+
+If implemented and exposed, a route-listing endpoint may reveal application paths and functionality.
+
+Not every Express application provides this endpoint. Route enumeration behavior depends on the application's implementation.
+
+### 5.5 Environment Variable Disclosure
+
+```bash
+curl -s http://TARGET_IP:3000/api/debug/env
+```
+
+If a debug endpoint returns environment variables, it may disclose:
+
+- Database credentials
+- Internal hostnames and ports
+- Application configuration
+- Development-mode settings
+- Other secrets stored in environment variables
+
+Environment variables and credentials must not be returned to unauthorized users.
+
+### 5.6 Static Configuration Files
+
+```bash
+curl -s http://TARGET_IP:3000/static/config.js
+```
+
+Public JavaScript configuration files may reveal API hostnames, debug settings, and application version information.
+
+Client-side JavaScript is accessible to users. Secrets must not be stored in publicly delivered files.
+
+### Remediation
+
+- Disable or restrict debug endpoints.
+- Return generic error messages in production.
+- Keep detailed errors in protected server-side logs.
+- Never expose credentials or environment variables through APIs.
+- Review client-side files for sensitive information.
+- Implement suitable authentication and authorization.
+
+## 6. Nginx Misconfiguration
+
+Nginx can serve static content, act as a reverse proxy, and distribute traffic between backend servers.
+
+### 6.1 Server Version Disclosure
+
+```bash
+curl -sI http://TARGET_IP:8080 | grep -i server
+```
+
+The response may reveal the Nginx version.
+
+The `server_tokens off;` directive can reduce version disclosure in standard responses and error pages.
+
+### 6.2 Directory Listing
+
+```bash
+curl -s http://TARGET_IP:8080/files/
+```
+
+If directory indexing is enabled, the response may list files in the requested directory.
+
+Potentially exposed resources include deployment notes, configuration files, and backup archives.
+
+### 6.3 Retrieve a File
+
+```bash
+curl -s http://TARGET_IP:8080/files/deploy-notes.txt
+```
+
+This requests the specified file if it is accessible.
+
+### 6.4 Nginx Status Endpoint
+
+```bash
+curl -s http://TARGET_IP:8080/nginx_status
+```
+
+If the `stub_status` module is configured and the endpoint is accessible, the response may include:
+
+- Active connections
+- Accepted and handled connections
+- Total requests
+- Reading, writing, and waiting connection counts
+
+These metrics help administrators monitor a server, but public access may disclose operational information.
+
+Example configuration for restricting access:
+
+```nginx
+location /nginx_status {
+    stub_status;
+    allow 127.0.0.1;
+    deny all;
+}
+```
+
+This example permits localhost access and denies other clients, assuming the configuration is applied in the appropriate context and no other configuration changes the effective access rules.
+
+### Remediation
+
+- Disable directory indexing when unnecessary.
+- Restrict access to status endpoints.
+- Minimize unnecessary version disclosure.
+- Keep sensitive files outside publicly served directories.
+- Review Nginx configuration and file permissions.
+
+## 7. HTTP Security Headers
+
+HTTP security headers help browsers handle certain security-sensitive behaviors.
+
+| Header | Purpose |
+|---|---|
+| `X-Frame-Options` | Helps restrict framing and reduce clickjacking risk |
+| `X-Content-Type-Options` | The `nosniff` value helps prevent MIME-type sniffing |
+| `Content-Security-Policy` | Restricts permitted sources for scripts and other resources |
+| `Referrer-Policy` | Controls how much referrer information is sent |
+| `Strict-Transport-Security` | Instructs browsers to use HTTPS for future connections |
+
+For clickjacking protection, the CSP `frame-ancestors` directive provides flexible framing controls and should also be considered.
+
+### Audit Selected Headers
+
+```bash
+for port in 80 8000 3000 8080; do
+  echo "=== Port $port ==="
+  curl -sI http://TARGET_IP:$port/ |
+    grep -iE "x-frame-options|x-content-type|content-security-policy|strict-transport|referrer-policy" ||
+    echo "(no security headers found)"
+done
+```
+
+This loop checks the selected response headers on all four ports.
+
+If `(no security headers found)` appears, none of the searched header names matched the response. It does not prove that every possible security header is absent.
+
+**Important:** HSTS should be evaluated on HTTPS responses. Missing headers indicate potential weaknesses, but actual risk depends on the application and deployment.
+
+## 8. Nikto Web Server Scanner
+
+Nikto is a web server scanner that checks for issues such as exposed files, insecure configurations, outdated software indicators, and missing headers.
+
+### Example Command
+
+```bash
+nikto -h http://TARGET_IP:80 -nointeractive
+```
+
+- `-h` — specifies the target.
+- `-nointeractive` — suppresses interactive prompts.
+
+Use scanners only against systems for which you have explicit authorization.
+
+Example finding:
+
+```text
++ OSVDB-3268: /files/: Directory indexing found.
+```
+
+This indicates that directory indexing was detected at `/files/`.
+
+A scanner report is a starting point for verification, not automatic proof of exploitability. Confirm findings and document their impact.
+
+## 9. Cross-Server Comparison
+
+| Server | Common Areas to Investigate |
+|---|---|
+| Python HTTP Server | Served directory, dotfiles, backups |
+| Apache | Directory indexing, `/server-status`, backup files |
+| Node.js Express | Verbose errors, debug endpoints, environment variables |
+| Nginx | `autoindex`, `/nginx_status`, version disclosure |
+
+The exact findings depend on the effective configuration. Do not assume that a feature is enabled simply because it is commonly associated with a particular server.
+
+## 10. General Remediation Checklist
+
+- Remove unnecessary public files, backups, and database dumps.
+- Disable directory listings unless explicitly required.
+- Restrict administrative status and debug endpoints.
+- Prevent stack traces and internal configuration from reaching users.
+- Store credentials securely and never expose them in client-side files.
+- Configure appropriate HTTP security headers.
+- Reduce unnecessary software-version disclosure.
+- Keep server software and dependencies updated.
+- Verify findings and record evidence before assigning severity.
+
+## 11. Key Takeaways
+
+1. Response headers provide a useful initial fingerprinting method.
+2. Exposed files and directory listings can cause information disclosure.
+3. Status and debug endpoints should be restricted to authorized users.
+4. Verbose errors can reveal internal paths, SQL queries, and backend details.
+5. Apache and Nginx use different configuration directives but share similar investigation patterns.
+6. Security headers provide browser-side protections and should be audited.
+7. Findings must be confirmed against actual responses and configuration.
+
+**Core lesson:** Secure web servers require deliberate configuration, restricted access, and regular verification—not merely the choice of web server software.
