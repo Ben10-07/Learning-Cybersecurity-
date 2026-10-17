@@ -1,0 +1,571 @@
+# TryHackMe — Web Server Attacks II
+
+**Topics:** IIS Enumeration, 8.3 Short Filename Enumeration, WebDAV, ASPX Web Shells, IIS Misconfigurations, and Nmap NSE Automation
+
+## 1. Introduction
+
+This room explores common web server security weaknesses in Microsoft IIS and Windows-hosted web applications.
+
+The primary objectives are to identify IIS services, understand legacy short-filename disclosure, investigate WebDAV configuration, assess the security implications of ASPX web shells, identify common IIS misconfigurations, and automate enumeration with the Nmap Scripting Engine (NSE).
+
+### Learning Objectives
+
+- Identify web server software and reported versions.
+- Understand HTTP methods and WebDAV functionality.
+- Recognize information-disclosure risks associated with legacy 8.3 filenames.
+- Understand the conditions that can make WebDAV file operations dangerous.
+- Explain ASPX web shells and IIS Application Pool identities.
+- Identify common IIS configuration weaknesses.
+- Interpret relevant Nmap NSE script results.
+
+### Key Terminology
+
+| Term | Definition |
+|---|---|
+| Reconnaissance | Collecting initial information about a target |
+| Fingerprinting | Identifying software, services, or versions |
+| Enumeration | Collecting detailed information about exposed services and resources |
+| Misconfiguration | An insecure or incorrect configuration |
+| Exploitation | Using a vulnerability to cause unintended behavior |
+| Privilege escalation | Obtaining greater privileges than initially available |
+| Remediation | Correcting a security weakness |
+
+A typical assessment workflow is:
+
+**Reconnaissance → Enumeration → Validation → Impact Assessment → Reporting**
+
+All testing should be performed against authorized lab environments or systems for which explicit permission has been granted.
+
+## 2. IIS Fingerprinting and Enumeration
+
+### 2.1 What Is IIS?
+
+Internet Information Services (IIS) is Microsoft's web server software for Windows. It can host websites, HTTP services, and ASP.NET web applications.
+
+Important characteristics include:
+
+- Runs on Windows.
+- Handles HTTP and HTTPS requests.
+- Supports ASP.NET applications, including ASPX pages.
+- Uses Application Pools to manage application execution and isolation.
+
+### 2.2 Service and Version Detection
+
+```bash
+nmap -sV -p 80 <TARGET_IP>
+```
+
+**Command breakdown:**
+
+- `nmap` — network scanning tool.
+- `-sV` — enables service and version detection.
+- `-p 80` — scans TCP port 80.
+- `<TARGET_IP>` — target IP address.
+
+Example output:
+
+```text
+PORT   STATE SERVICE VERSION
+80/tcp open  http    Microsoft IIS httpd 10.0
+```
+
+This indicates that port 80 is open and Nmap identified Microsoft IIS 10.0.
+
+Version detection does not necessarily identify the exact patch level or establish whether the server is vulnerable.
+
+### 2.3 HTTP Response Headers
+
+HTTP response headers can disclose information about the server.
+
+Example:
+
+```http
+Server: Microsoft-IIS/10.0
+```
+
+This header reports IIS as the server software. However, headers may be hidden, modified, or affected by intermediary services. They should not be treated as definitive proof of the underlying configuration.
+
+## 3. HTTP Methods and WebDAV
+
+HTTP methods describe the actions requested by a client.
+
+| Method | Purpose |
+|---|---|
+| `GET` | Retrieve a resource |
+| `HEAD` | Retrieve response headers without the normal response body |
+| `POST` | Submit data for processing |
+| `OPTIONS` | Request information about supported communication options |
+| `PUT` | Create or replace a resource, subject to server behavior and permissions |
+| `DELETE` | Request resource deletion |
+| `TRACE` | Provide diagnostic request-tracing behavior |
+| `PROPFIND` | Retrieve WebDAV resource properties |
+
+Additional WebDAV methods include `PROPPATCH`, `MKCOL`, `COPY`, `MOVE`, `LOCK`, and `UNLOCK`.
+
+**Security consideration:** An advertised HTTP method does not automatically indicate that an unauthorized operation will succeed. Authentication, authorization, request handling, and filesystem permissions all affect the outcome.
+
+## 4. IIS 8.3 Short Filename Enumeration
+
+### 4.1 The 8.3 Filename Convention
+
+Windows has historically supported a legacy filename convention known as **8.3 filenames**:
+
+- Up to eight characters for the filename portion.
+- Up to three characters for the extension.
+
+Illustrative example:
+
+```text
+Long filename:  confidential.txt
+Short-name style: CONFID~1.TXT
+```
+
+This example is illustrative only. The actual short filename depends on filesystem naming behavior and the environment.
+
+### 4.2 What Is Tilde Enumeration?
+
+In certain IIS and Windows configurations, legacy short-filename behavior can reveal clues about the existence or naming of files and directories.
+
+The security concern is that information about a resource may be disclosed even when directory browsing is disabled or the full filename is unknown.
+
+### 4.3 Security Implications
+
+Potential consequences include:
+
+- Disclosure of hidden resource names.
+- Clues about internal application structure.
+- Discovery of filenames that help guide further authorized assessment.
+
+Short-filename enumeration does **not** automatically provide access to a file's contents. File existence, name disclosure, and read permission are separate issues.
+
+### 4.4 Defensive Measures
+
+- Keep Windows and IIS updated.
+- Assess whether the deployed configuration exposes legacy short-name information.
+- Store sensitive files outside web-accessible directories.
+- Apply appropriate filesystem and application access controls.
+- Validate suspected findings rather than relying on a single ambiguous response.
+
+**Key takeaway:** 8.3 enumeration concerns potential filename information disclosure, not guaranteed file access.
+
+## 5. WebDAV Security
+
+### 5.1 What Is WebDAV?
+
+Web Distributed Authoring and Versioning (WebDAV) extends HTTP with functionality for managing remote files and collections.
+
+Common WebDAV methods include:
+
+| Method | Purpose |
+|---|---|
+| `PROPFIND` | Retrieve resource properties |
+| `PROPPATCH` | Modify resource properties |
+| `PUT` | Create or replace a resource |
+| `DELETE` | Request resource deletion |
+| `COPY` | Copy a resource |
+| `MOVE` | Move a resource |
+| `MKCOL` | Create a collection |
+| `LOCK` / `UNLOCK` | Manage resource locking |
+
+### 5.2 Why Can WebDAV Be Risky?
+
+WebDAV may create a security risk when it is unnecessarily enabled or incorrectly configured. For example, insufficient access controls can allow unauthorized file operations.
+
+However, the presence of WebDAV alone does not establish a vulnerability.
+
+### 5.3 Conditions Affecting Server-Side File Upload Risk
+
+Three distinct configuration areas are particularly important:
+
+1. **WebDAV request handling:** The server processes relevant WebDAV operations.
+2. **Write permissions:** The requesting identity is authorized to write to the destination.
+3. **Script execution:** IIS is configured to process uploaded server-side content in the relevant location.
+
+These are separate controls. Permission to upload a file does not necessarily mean that the file can be executed.
+
+### 5.4 Upload and Request-Processing Differences
+
+Differences between upload handling, request filtering, handler mappings, and execution rules can create weaknesses in misconfigured environments.
+
+A security assessment should determine:
+
+- Why the destination directory is writable.
+- Which file types are permitted.
+- Whether uploaded content can be executed.
+- Whether authentication and authorization are correctly enforced.
+
+### 5.5 Security Impact and Remediation
+
+If an unauthorized user can upload executable server-side content and the server processes it, the application may be seriously compromised.
+
+Recommended defenses:
+
+- Disable WebDAV when it is not required.
+- Apply least-privilege write permissions.
+- Disable script execution in upload directories.
+- Validate uploaded files using appropriate type and content checks.
+- Consider storing uploaded files outside the web root.
+- Separate file storage permissions from application execution permissions.
+
+## 6. ASPX Web Shells
+
+### 6.1 What Is ASPX?
+
+ASPX is a page format used by ASP.NET web applications. An ASPX page can be processed by the server to generate an HTTP response.
+
+### 6.2 What Is a Web Shell?
+
+A web shell is server-side code that can trigger actions through web requests. If an unauthorized person gains control of a web shell, it may provide a path to misuse application or server functionality.
+
+| Normal Web Page | Web Shell |
+|---|---|
+| Provides intended website content or functionality | Can trigger server-side operations |
+| Follows the application's intended behavior | May be used to perform unauthorized actions |
+| Operates under normal application controls | Can create serious risk if access controls fail |
+
+### 6.3 IIS Application Pool Identity
+
+IIS applications commonly execute under an Application Pool identity. That identity determines which Windows permissions are available to the application.
+
+Example identity:
+
+```text
+iis apppool\defaultapppool
+```
+
+This indicates the `DefaultAppPool` virtual account identity.
+
+The potential impact of a compromised application depends on the permissions of the identity under which it executes.
+
+- Restricted permissions can limit the impact.
+- Excessive permissions can increase the impact.
+- Administrator or SYSTEM access is not automatically obtained through a web shell.
+
+### 6.4 Windows Token Privileges
+
+The following Windows command displays information about the current security identity's privileges:
+
+```cmd
+whoami /priv
+```
+
+Example output:
+
+```text
+SeChangeNotifyPrivilege       Enabled
+SeImpersonatePrivilege        Enabled
+```
+
+- `whoami` — displays information about the current security identity.
+- `/priv` — lists privileges associated with the current token.
+- `Enabled` — indicates that the privilege is enabled in that token.
+
+### 6.5 Understanding SeImpersonatePrivilege
+
+`SeImpersonatePrivilege` is a Windows privilege related to impersonation.
+
+Some privilege-escalation techniques attempt to abuse impersonation behavior, but an enabled privilege does not guarantee successful escalation. The outcome depends on operating-system version, patches, process context, and additional conditions.
+
+**Important:** The presence of `SeImpersonatePrivilege` does not automatically mean that the process has administrator or SYSTEM privileges.
+
+## 7. Common IIS Misconfigurations
+
+### 7.1 Directory Listing
+
+Directory listing may expose filenames and subdirectories when directory browsing is enabled.
+
+Example request:
+
+```bash
+curl -i http://<TARGET_IP>/uploads/
+```
+
+The `-i` option displays the HTTP response headers along with the response body.
+
+Possible outcomes:
+
+- A file listing may indicate that directory browsing is enabled.
+- `403 Forbidden` indicates that access was denied.
+- `404 Not Found` indicates that the server reported the requested resource as unavailable or not found.
+
+**Risk:** Exposed directory contents may reveal backups, internal documents, or sensitive filenames.
+
+**Remediation:** Disable directory browsing when unnecessary and keep sensitive resources outside web-accessible directories.
+
+### 7.2 HTTP PUT and DELETE
+
+PUT and DELETE are associated with resource creation or replacement and deletion, respectively.
+
+An initial method check can be performed with:
+
+```bash
+curl -i -X OPTIONS http://<TARGET_IP>/
+```
+
+The response may contain an `Allow` header or other information about supported methods.
+
+Advertised methods do not establish that a specific operation will succeed. Authorization rules, server configuration, and destination permissions must also be considered.
+
+**Remediation:** Disable unnecessary methods and enforce strict authorization for resource modification.
+
+### 7.3 `web.config` Exposure
+
+`web.config` is a configuration file used by IIS-hosted ASP.NET applications.
+
+It may contain application settings, authentication rules, and connection-related configuration.
+
+Example request:
+
+```bash
+curl -i http://<TARGET_IP>/web.config
+```
+
+If sensitive configuration content is returned to an unauthorized client, the application may suffer information disclosure.
+
+**Remediation:**
+
+- Restrict access to configuration files.
+- Avoid hardcoding secrets in application configuration.
+- Use secure secret-management practices.
+- Verify that configuration files are not unintentionally exposed.
+
+### 7.4 Verbose Error Messages
+
+Detailed error pages may disclose:
+
+- Internal file paths.
+- Stack traces.
+- Framework details.
+- Application implementation information.
+
+**Remediation:** Display generic error pages in production and retain detailed diagnostic information in protected server-side logs.
+
+### 7.5 `trace.axd`
+
+ASP.NET tracing provides diagnostic information about application requests.
+
+Example request:
+
+```bash
+curl -i http://<TARGET_IP>/trace.axd
+```
+
+If diagnostic information is accessible to unauthorized users and contains sensitive details, it may expose internal application behavior.
+
+An HTTP 200 response alone does not prove a vulnerability. The response content and access restrictions must be examined.
+
+**Remediation:** Disable production tracing or restrict access to authorized administrators.
+
+### 7.6 HTTP TRACE
+
+TRACE is an HTTP diagnostic method that provides request-tracing behavior.
+
+Example request:
+
+```bash
+curl -i -X TRACE http://<TARGET_IP>/
+```
+
+If supported, the server may return information about the request. The security impact depends on the server's behavior and the application environment.
+
+TRACE support does not automatically establish Cross-Site Tracing exploitability.
+
+**Remediation:** Disable TRACE when it is not required and validate the server's effective configuration.
+
+### 7.7 Application Pool Permissions
+
+An Application Pool identity determines the Windows security context used by an IIS application.
+
+Excessive permissions can increase the impact of a compromise.
+
+**Remediation:** Follow the principle of least privilege and grant only the permissions required for normal application operation.
+
+## 8. Nmap Scripting Engine (NSE) Automation
+
+### 8.1 What Is NSE?
+
+The Nmap Scripting Engine allows Nmap to run scripts that gather additional information about services and their behavior.
+
+In this room, NSE scripts automate checks related to HTTP methods, WebDAV, IIS vulnerabilities, and NTLM information.
+
+### 8.2 Service Version Detection
+
+```bash
+nmap -sV -p 80 <TARGET_IP>
+```
+
+Example output:
+
+```text
+80/tcp open http Microsoft IIS httpd 10.0
+```
+
+This identifies the reported IIS version but does not establish patch status or vulnerability.
+
+### 8.3 HTTP Method Enumeration
+
+```bash
+nmap --script http-methods -p 80 <TARGET_IP>
+```
+
+The `http-methods` script examines HTTP methods reported by the server, commonly using an OPTIONS request and the resulting response information.
+
+Example lab output:
+
+```text
+Supported Methods: OPTIONS TRACE GET HEAD POST COPY PROPFIND DELETE MOVE PROPPATCH MKCOL LOCK UNLOCK PUT
+Potentially risky methods: TRACE COPY PROPFIND DELETE MOVE PROPPATCH MKCOL LOCK UNLOCK PUT
+```
+
+**Interpretation:**
+
+- The server reported standard HTTP methods and WebDAV-related methods.
+- Methods such as PUT and DELETE deserve closer review when exposed unnecessarily.
+- The output does not prove that unauthorized file modification or deletion is possible.
+
+### 8.4 WebDAV Enumeration
+
+```bash
+nmap --script http-webdav-scan -p 80 <TARGET_IP>
+```
+
+The script checks for WebDAV support and examines related HTTP responses.
+
+Example lab output:
+
+```text
+WebDAV type: Unknown
+Public Options: OPTIONS, TRACE, GET, HEAD, POST, PROPFIND, PROPPATCH, MKCOL, PUT, DELETE, COPY, MOVE, LOCK, UNLOCK
+Allowed Methods: OPTIONS, TRACE, GET, HEAD, POST, COPY, PROPFIND, DELETE, MOVE, PROPPATCH, MKCOL, LOCK, UNLOCK
+Server Type: Microsoft-IIS/10.0
+```
+
+**Interpretation:**
+
+- `WebDAV type: Unknown` — the scan did not identify a specific WebDAV type.
+- `Public Options` — methods reported in the server's response.
+- `Allowed Methods` — methods reported by the script's checks.
+- `Server Type` — the response identified Microsoft IIS 10.0.
+
+In this output, PUT appears under `Public Options` but not under `Allowed Methods`. This discrepancy is a reason to investigate further, not proof of a successful write operation.
+
+### 8.5 IIS WebDAV Vulnerability Check
+
+```bash
+nmap --script http-iis-webdav-vuln -p 80 <TARGET_IP>
+```
+
+This script checks for the legacy IIS WebDAV authentication-bypass vulnerability associated with **CVE-2009-1535**.
+
+The issue is associated with legacy IIS 5 and IIS 6 environments. Identifying IIS 10.0 makes this specific legacy vulnerability unlikely to apply, but the reported version should still be interpreted alongside the actual environment and script results.
+
+**Key lesson:** A vulnerability's applicability depends on affected versions and configuration, not simply on whether IIS is present.
+
+### 8.6 NTLM Information Enumeration
+
+```bash
+nmap --script http-ntlm-info \
+  --script-args http-ntlm-info.root=/webdav/ \
+  -p 80 <TARGET_IP>
+```
+
+**Command breakdown:**
+
+| Component | Purpose |
+|---|---|
+| `--script http-ntlm-info` | Runs the NTLM information script |
+| `--script-args` | Supplies an argument to the script |
+| `http-ntlm-info.root=/webdav/` | Specifies the request path used by the script |
+| `-p 80` | Targets TCP port 80 |
+| `<TARGET_IP>` | Specifies the target host |
+
+NTLM (NT LAN Manager) is a Windows authentication protocol. The script attempts to extract available computer or domain information from an NTLM challenge response.
+
+Example lab output:
+
+```text
+Target_Name: CHANGE-MY-HOSTN
+NetBIOS_Domain_Name: CHANGE-MY-HOSTN
+NetBIOS_Computer_Name: CHANGE-MY-HOSTN
+DNS_Domain_Name: CHANGE-MY-HOSTNAME
+DNS_Computer_Name: CHANGE-MY-HOSTNAME
+Product_Version: 10.0.17763
+```
+
+**Field interpretation:**
+
+- `Target_Name` — target name reported in the NTLM response.
+- `NetBIOS_Domain_Name` — reported NetBIOS domain name.
+- `NetBIOS_Computer_Name` — reported NetBIOS computer name.
+- `DNS_Domain_Name` — reported DNS domain name.
+- `DNS_Computer_Name` — reported DNS computer name.
+- `Product_Version` — reported product or build version.
+
+The build number `10.0.17763` corresponds to the Windows Server 2019 release family. It does not confirm the system's patch level.
+
+Values such as `CHANGE-MY-HOSTNAME` may be placeholders or reflect default configuration values rather than meaningful production hostnames.
+
+### 8.7 Benefits and Limitations of Automation
+
+NSE scripts can:
+
+- Speed up repetitive enumeration.
+- Produce consistent results.
+- Collect multiple types of service information.
+- Make assessments easier to repeat.
+
+However, automated results still require interpretation and validation. A detected method or exposed endpoint is not necessarily an exploitable vulnerability.
+
+## 9. Practical Command Reference
+
+| Objective | Command |
+|---|---|
+| IIS service detection | `nmap -sV -p 80 <TARGET_IP>` |
+| HTTP method enumeration | `nmap --script http-methods -p 80 <TARGET_IP>` |
+| WebDAV scan | `nmap --script http-webdav-scan -p 80 <TARGET_IP>` |
+| NTLM information | `nmap --script http-ntlm-info --script-args http-ntlm-info.root=/webdav/ -p 80 <TARGET_IP>` |
+| Inspect HTTP response | `curl -i http://<TARGET_IP>/` |
+| Check advertised methods | `curl -i -X OPTIONS http://<TARGET_IP>/` |
+| Inspect ASP.NET tracing endpoint | `curl -i http://<TARGET_IP>/trace.axd` |
+| Display Windows token privileges | `whoami /priv` |
+
+Replace `<TARGET_IP>` with the current authorized lab machine's IP address. The IP address may change after the room is restarted.
+
+## 10. Defensive Checklist
+
+- Keep IIS and Windows updated.
+- Assess and mitigate unnecessary legacy short-filename disclosure.
+- Disable WebDAV when it is not required.
+- Restrict write access to web directories.
+- Prevent server-side script execution in upload directories.
+- Store uploaded content separately from executable application code.
+- Avoid exposing sensitive configuration files such as `web.config`.
+- Disable or restrict directory browsing and diagnostic endpoints.
+- Avoid verbose production errors.
+- Disable unnecessary HTTP methods.
+- Run applications with least-privilege identities.
+- Review NSE results and validate security findings before assigning severity.
+
+## 11. Key Takeaways
+
+1. IIS fingerprinting helps identify the web server and reported version.
+2. Legacy 8.3 short-filename behavior can disclose clues about hidden resources.
+3. WebDAV provides remote file-management functionality and must be properly secured.
+4. Upload permission and server-side execution permission are separate controls.
+5. ASPX web shells can create serious risk when unauthorized server-side code is executed.
+6. Application Pool permissions influence the potential impact of an application compromise.
+7. IIS misconfigurations may expose files, diagnostic information, and unnecessary HTTP functionality.
+8. Nmap NSE scripts automate enumeration, but their output must be interpreted carefully.
+9. An advertised HTTP method or detected service does not, by itself, prove exploitability.
+
+## 12. Reporting a Finding
+
+For each finding, document:
+
+- **Observation:** What behavior was observed?
+- **Evidence:** Which response or scan result supports the finding?
+- **Impact:** What security risk could result?
+- **Validation:** Was the weakness confirmed, or is it only an indication?
+- **Remediation:** What configuration or access-control change would reduce the risk?
+
+**Core principle:** Effective IIS security depends on secure configuration, least-privilege access, careful handling of uploaded files, and validation of exposed functionality.
