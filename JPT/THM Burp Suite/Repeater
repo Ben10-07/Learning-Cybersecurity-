@@ -1,0 +1,223 @@
+# TryHackMe: Burp Suite Repeater
+
+## Overview
+
+Burp Suite Repeater is a web application security testing tool used to manually modify, resend, and analyze HTTP requests. It helps security learners understand how an application responds to different inputs, headers, parameters, and request structures.
+
+These notes summarize the Repeater module concepts and the practical challenges completed in the authorized TryHackMe lab.
+
+## 1. Key Features
+
+- **Request Editor:** Inspect and modify HTTP requests.
+- **Send Controls:** Send requests and review previous request variations.
+- **Response Viewer:** Examine server responses.
+- **Inspector:** View and edit supported request components through structured fields.
+- **Response Display Modes:** Analyze responses using Pretty, Raw, Hex, and Render views.
+- **Request Tabs:** Organize multiple requests for comparison.
+
+## 2. Sending Requests to Repeater
+
+A request can be transferred from Burp Suite Proxy to Repeater by selecting the request in HTTP history and choosing **Send to Repeater**. The supported keyboard shortcut is `Ctrl + R`.
+
+Once transferred, the request can be modified and resent without repeatedly navigating through the browser workflow.
+
+### Example HTTP request
+
+```http
+GET /products/3 HTTP/1.1
+Host: Machine//IP 
+Accept: text/html
+```
+
+The request path and other permitted request components can be modified to observe changes in the server response.
+
+Proxy is primarily used to capture and intercept traffic, while Repeater supports controlled, manual request testing.
+
+## 3. HTTP Request Components
+
+| Component | Description |
+|---|---|
+| Method | Defines the request operation, such as GET or POST. |
+| Path | Identifies the requested resource. |
+| Protocol | Specifies the HTTP version. |
+| Host | Identifies the target host. |
+| Headers | Provide request metadata and additional context. |
+| Query parameters | Supply values through the URL query string. |
+| Body parameters | Supply data in the request body. |
+| Cookies | Carry application state or session-related values. |
+
+A standard HTTP header follows this format:
+
+```http
+Header-Name: Header-Value
+```
+
+Headers can be added or modified using the raw request editor or the Inspector interface. Their effects depend on how the target application processes them.
+
+## 4. Response Display Modes
+
+### Pretty
+Displays the response in a readable, formatted representation.
+
+### Raw
+Displays the raw HTTP response message.
+
+### Hex
+Represents response data as hexadecimal bytes, which can be useful when inspecting binary or non-text content.
+
+### Render
+Displays supported HTML content as a rendered page.
+
+The visibility of control characters can also help when investigating HTTP message formatting. In HTTP/1.1, CRLF (`\r\n`) is used for line endings, and a blank line separates headers from the message body.
+
+## 5. Inspector
+
+The Inspector organizes request and response information into structured sections.
+
+Important sections include:
+
+- Request Attributes
+- Request Query Parameters
+- Request Body Parameters
+- Request Cookies
+- Request Headers
+- Response Headers
+
+This interface makes it easier to inspect and edit supported request components without manually navigating the entire raw message.
+
+## 6. HTTP Status Codes
+
+| Status code | Meaning |
+|---|---|
+| `200 OK` | The request was processed successfully. |
+| `400 Bad Request` | The request was considered invalid. |
+| `404 Not Found` | The requested resource was not found. |
+| `500 Internal Server Error` | An unexpected server-side error occurred. |
+
+A status code provides an initial indication of application behaviour. It should be interpreted alongside the response body and other relevant observations.
+
+## 7. Endpoint Validation Testing
+
+The lab uses a numeric product endpoint:
+
+```http
+GET /products/3 HTTP/1.1
+Host: Machine//IP
+```
+
+The final path component represents a product identifier.
+
+Testing different input types and boundary values can reveal how an application validates identifiers.
+
+In the lab, a negative product identifier caused an HTTP 500 response, while an extremely large identifier produced a 404 response.
+
+These results demonstrate that different inputs may trigger different application behaviours. However, an HTTP 500 response alone does not establish a security vulnerability.
+
+### Security considerations
+
+Applications should:
+
+- Validate input types and allowed ranges.
+- Handle invalid identifiers safely.
+- Avoid exposing internal errors to users.
+- Return appropriate responses for invalid or missing resources.
+
+## 8. Extra-mile Challenge: Union-based SQL Injection
+
+### Objective
+
+The challenge investigates a Union-based SQL Injection vulnerability in the `/about/ID` endpoint and demonstrates how database metadata and query output can expose information.
+
+### 8.1 Identifying the vulnerable query
+
+The lab's error response exposed the following SQL statement:
+
+```sql
+SELECT firstName, lastName, pfpLink, role, bio
+FROM people
+WHERE id = 2
+```
+
+This revealed:
+
+- Table name: `people`
+- Selected columns: `firstName`, `lastName`, `pfpLink`, `role`, `bio`
+- Original identifier: `2`
+
+The addition of an apostrophe to the identifier caused a server error in the lab. The detailed error message also exposed the underlying query structure.
+
+This is an example of information disclosure through verbose database errors.
+
+### 8.2 Understanding UNION ALL
+
+`UNION ALL` combines the results of compatible SELECT statements.
+
+For the operation to work, the SELECT statements must return compatible column counts and corresponding data types.
+
+The original query returned five columns. Therefore, the injected SELECT statement in the lab also needed to return five compatible columns.
+
+`NULL` can be used as a placeholder when a specific value is not required for a column position.
+
+### 8.3 Database metadata
+
+The challenge used MySQL-style metadata from `information_schema.columns` to identify the columns associated with the `people` table.
+
+The discovered columns were:
+
+- `id`
+- `firstName`
+- `lastName`
+- `pfpLink`
+- `role`
+- `shortRole`
+- `bio`
+- `notes`
+
+Understanding metadata can help identify the structure of a database during authorized security testing.
+
+### 8.4 Aggregating results with group_concat()
+
+The `group_concat()` function combines values from multiple rows into a single string.
+
+This is useful when an application displays only one result but the tester needs to examine several returned values together.
+
+In the challenge, the function was used to consolidate column names into a single displayed result.
+
+### 8.5 Identifying the target data
+
+The challenge identified the CEO's record using ID `1` and identified `notes` as the relevant column.
+
+The objective was to retrieve the `notes` value associated with that record, which contained the lab flag.
+
+The flag itself must be read from the actual lab response; it should not be guessed from the walkthrough.
+
+## 9. SQL Injection Prevention
+
+Recommended defensive measures include:
+
+1. **Parameterized queries:** Separate SQL instructions from user-supplied values.
+2. **Input validation:** Validate identifier types and permitted ranges.
+3. **Safe error handling:** Do not expose SQL statements, database structure, or stack traces in production responses.
+4. **Least privilege:** Restrict database permissions to the minimum necessary.
+5. **Security testing:** Test input handling and error behaviour in authorized environments.
+
+## 10. Key Takeaways
+
+- Repeater supports controlled manual HTTP request testing.
+- Inspector simplifies request component inspection and modification.
+- Response display modes provide different ways to examine server output.
+- HTTP status codes must be interpreted in context.
+- Endpoint validation helps prevent unexpected application behaviour.
+- Union-based SQL Injection combines compatible SELECT results.
+- Database metadata can reveal table structure.
+- `group_concat()` combines multiple values into one output.
+- Parameterized queries are a primary defence against SQL Injection.
+
+## Lab Information
+
+- **Platform:** TryHackMe
+- **Room:** Burp Suite: Repeater
+- **Next topic:** Burp Suite Intruder
+- **Scope:** Authorized educational lab
+
+*These notes document concepts and observations from the lab for learning and defensive security education.*
