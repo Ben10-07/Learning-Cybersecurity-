@@ -1,0 +1,176 @@
+# Burp Suite Intruder — TryHackMe Learning Notes
+
+## Overview
+
+Burp Suite Intruder automates HTTP request modification and repeated testing by inserting payloads into selected request positions. It is useful for authorized web application testing, fuzzing, parameter testing, and response comparison.
+
+## 1. Intruder Interface
+
+### Positions
+The Positions tab defines where payloads will be inserted into a request. Selected positions are enclosed by `§` markers.
+
+- **Add §:** Marks selected text as a payload position.
+- **Clear §:** Removes existing payload markers.
+- **Auto §:** Automatically identifies potential payload positions.
+
+Example:
+
+```http
+username=§testuser§&password=§testpass§
+```
+
+### Payloads
+The Payloads tab configures payload sets and their values.
+
+- **Payload Sets:** Associates payload sets with selected positions.
+- **Payload Settings:** Adds, loads, pastes, or removes payload values.
+- **Payload Processing:** Applies transformations or filtering rules.
+- **Payload Encoding:** Configures encoding before payloads are sent.
+
+### Resource Pool
+Manages request resource usage and scheduling options. Some advanced features are limited to Burp Professional.
+
+### Settings
+Controls attack behaviour and selected result-handling options.
+
+**Note:** Burp Community Edition rate-limits Intruder attacks.
+
+## 2. Intruder Attack Types
+
+### Sniper
+Sniper uses one payload set and tests each selected position individually. It iterates through all payloads at one position before moving to the next.
+
+For one payload set:
+
+`Request count = Number of payloads × Number of positions`
+
+Example: 3 payloads and 2 positions produce 6 requests.
+
+**Typical use:** Testing individual parameter values.
+
+### Battering Ram
+Battering Ram inserts the same payload into every selected position in each request.
+
+Example:
+
+```text
+username=apple&password=apple
+username=mango&password=mango
+username=grape&password=grape
+```
+
+`Request count = Number of payloads`
+
+**Typical use:** Testing multiple positions with identical values.
+
+### Pitchfork
+Pitchfork uses a separate payload set for each position and pairs payloads by their index.
+
+Example:
+
+| Request | Username | Password |
+|---|---|---|
+| 1 | joel | pass1 |
+| 2 | harriet | pass2 |
+| 3 | alex | pass3 |
+
+The attack stops when one of the payload sets is exhausted. For equally sized lists, the request count equals the number of entries in each list.
+
+**Typical use:** Testing paired datasets.
+
+### Cluster Bomb
+Cluster Bomb uses separate payload sets and tests every possible combination of their values.
+
+`Request count = Product of the sizes of all payload sets`
+
+Example: 3 usernames and 3 passwords produce 9 combinations.
+
+**Typical use:** Exhaustive combination testing in authorized environments.
+
+Cluster Bomb can generate a large number of requests. Estimate the request count before running an attack.
+
+### Attack Type Summary
+
+| Attack type | Payload behaviour |
+|---|---|
+| Sniper | Tests each position individually |
+| Battering Ram | Inserts the same payload into all positions |
+| Pitchfork | Pairs corresponding payloads by index |
+| Cluster Bomb | Tests every possible combination |
+
+## 3. Payload Processing and Encoding
+
+Payload processing rules can transform or filter values before transmission.
+
+Examples include adding prefixes or suffixes, replacing matching text, and applying pattern-based rules.
+
+URL encoding represents special characters in a form suitable for URLs. For example, a space may be represented as `%20`.
+
+## 4. Credential Stuffing and Brute Force
+
+**Brute force** tests multiple candidate passwords, commonly against a particular account.
+
+**Credential stuffing** tests previously obtained username-password pairs. Pitchfork can pair corresponding entries from separate username and password lists.
+
+These techniques should only be used in authorized labs or systems where testing is explicitly permitted.
+
+## 5. Analyzing Attack Results
+
+Useful response indicators include:
+
+- **HTTP status code:** The response status returned by the server.
+- **Response length:** The size of the returned response.
+- **Response body:** The content returned by the application.
+- **Response differences:** Variations that may indicate different application behaviour.
+
+A `302` response indicates a redirect, not necessarily a successful login. A `200 OK` response does not independently prove that access control is working correctly.
+
+Always interpret response indicators in context.
+
+## 6. Insecure Direct Object Reference (IDOR)
+
+IDOR is an access-control weakness in which an application exposes an object through an identifier without properly enforcing authorization.
+
+For example:
+
+```text
+/support/ticket/101
+```
+
+In an authorized lab, a tester can examine whether changing the ticket identifier exposes resources that the current user is not permitted to access.
+
+A sound assessment checks both the response and the actual authorization behaviour. A successful HTTP response alone does not confirm an IDOR vulnerability.
+
+## 7. CSRF Tokens, Session Cookies, and Macros
+
+Some login forms use a changing hidden field such as `loginToken` and a session cookie such as `session`. These values may need to be refreshed for each login attempt.
+
+### Burp Macros
+A macro stores one or more HTTP requests that can be replayed as part of a repeated workflow.
+
+### Session Handling Rules
+Session handling rules specify when a macro should run and how its results should be applied.
+
+A typical lab configuration involves:
+
+1. Capturing a GET request to the login page.
+2. Creating a macro from the captured request.
+3. Creating a session handling rule scoped to Intruder.
+4. Adding a **Run a Macro** action.
+5. Restricting updates to the required token parameter and session cookie.
+6. Verifying the resulting requests and responses.
+
+If requests return `403` errors, inspect the macro, token, cookie, and rule configuration. A `302` response is not, by itself, proof of successful authentication.
+
+## 8. Key Takeaways
+
+- Positions define where payloads are inserted.
+- Payloads define which values are tested.
+- Sniper tests positions individually.
+- Battering Ram uses the same payload across positions.
+- Pitchfork pairs payloads by index.
+- Cluster Bomb tests all possible combinations.
+- Response status codes should be interpreted alongside response lengths and content.
+- IDOR assessments focus on authorization enforcement.
+- Macros and session handling rules help automate workflows involving changing tokens and cookies.
+- Intruder testing should remain within authorized environments.
