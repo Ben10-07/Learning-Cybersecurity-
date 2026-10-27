@@ -1,0 +1,353 @@
+# Burp Suite Other Modules — TryHackMe Notes
+
+## Overview
+
+Burp Suite provides several tools that support web application security testing. In addition to Proxy and Repeater, four useful modules are **Decoder, Comparer, Sequencer, and Organizer**.
+
+| Module | Primary Purpose |
+|---|---|
+| Decoder | Encode, decode, and transform data; calculate hashes |
+| Comparer | Identify differences between two data sets |
+| Sequencer | Analyze the randomness of tokens |
+| Organizer | Store and organize HTTP request and response copies |
+
+---
+
+## 1. Decoder
+
+### What is Decoder?
+
+Decoder is a Burp Suite utility used to encode, decode, and transform data into different representations. It can also calculate cryptographic hashes.
+
+It is useful when inspecting URL parameters, cookies, encoded payloads, and other data encountered during web application testing.
+
+### Common Encoding and Transformation Types
+
+| Type | Description | Example |
+|---|---|---|
+| URL Encoding | Represents special characters in URL-safe form | A space may become `%20` |
+| HTML Encoding | Represents characters using HTML entities | `"` → `&quot;` |
+| Base64 | Converts binary data into printable characters | `Hello` → `SGVsbG8=` |
+| ASCII Hex | Represents ASCII bytes in hexadecimal | `ASCII` → `4153434949` |
+| Hexadecimal | Represents values using base 16 | `255` → `FF` |
+| Octal | Represents values using base 8 | `8` → `10` |
+| Binary | Represents values using base 2 | `5` → `101` |
+| Gzip | Compresses or decompresses data | A compressed data stream can be decompressed |
+
+**Important:** Base64 and URL encoding are not encryption. They do not provide confidentiality and should not be used as security mechanisms.
+
+### Encoding and Decoding Workflow
+
+1. Open Decoder in Burp Suite.
+2. Enter or paste the data to inspect.
+3. Select the required encoding or decoding operation.
+4. Review the output.
+5. Apply additional transformations if needed.
+
+Burp allows multiple transformations to be chained together. This is useful when data has been encoded more than once.
+
+### Smart Decode
+
+Smart Decode attempts to recognize common encoding formats and decode them automatically.
+
+For example:
+
+`&#x42;&#x75;&#x72;&#x70;` → `Burp`
+
+The input contains HTML hexadecimal character references. Smart Decode can help identify and reverse such transformations.
+
+### Hex View vs. ASCII Hex
+
+- **Hex View:** Displays the underlying data as hexadecimal bytes.
+- **ASCII Hex:** Converts text characters into their hexadecimal byte representation.
+
+These are related concepts, but they serve different purposes.
+
+### Hashing
+
+A hash function transforms input data into a fixed-length digest. Cryptographic hashes are designed to be computationally difficult to reverse, but they are not encryption.
+
+Common uses include:
+
+- Checking data integrity.
+- Comparing file contents.
+- Identifying known data.
+- Supporting digital signatures and authentication systems.
+
+#### Important Hashing Concepts
+
+- **One-way property:** A secure hash function should make recovering the original input computationally infeasible.
+- **Avalanche effect:** A small input change should produce a substantially different hash.
+- **Collision:** Two different inputs produce the same hash value.
+- **Integrity verification:** Comparing trusted hash values can help detect changes to data.
+
+#### Common Hash Algorithms
+
+| Algorithm | Security Status / Typical Use |
+|---|---|
+| MD5 | Cryptographically broken; unsuitable for security-sensitive integrity verification or password storage |
+| SHA-1 | Cryptographically broken for collision-resistant applications |
+| SHA-256 | Widely used cryptographic hash |
+| Argon2id | Recommended modern choice for password hashing where supported |
+| bcrypt | Password-hashing algorithm |
+| scrypt | Password-hashing algorithm designed to be resource-intensive |
+
+For password storage, use a dedicated password-hashing algorithm such as Argon2id, bcrypt, or scrypt, with appropriate parameters and salts. A fast general-purpose hash such as MD5 or SHA-256 alone is not suitable for password storage.
+
+### Example: Comparing Hashes
+
+A file's hash can be calculated with a command such as:
+
+```bash
+md5sum filename
+```
+
+On Linux, the following command calculates MD5 hashes for files in the current directory:
+
+```bash
+md5sum *
+```
+
+If a hash matches a known value, it suggests that the corresponding data produces that digest. However, MD5 is not collision-resistant, so it should not be relied upon for security-sensitive integrity verification.
+
+### Practical Applications
+
+- Decode URL parameters and encoded values.
+- Inspect Base64-encoded data.
+- Identify nested encoding transformations.
+- Convert data between text and hexadecimal representations.
+- Calculate hashes when investigating files or application data.
+
+---
+
+## 2. Comparer
+
+### What is Comparer?
+
+Comparer identifies differences between two pieces of data. It can compare text or binary content, making it useful when analyzing HTTP requests and responses.
+
+Data can be sent to Comparer from other Burp Suite tools, including Proxy and Repeater.
+
+### Comparison Modes
+
+| Mode | Purpose |
+|---|---|
+| Words | Highlights differences at the word or text level |
+| Bytes | Highlights differences at the byte level |
+
+Use **Words** when comparing readable text, such as HTML responses or JSON data. Use **Bytes** when exact byte-level differences matter.
+
+### Basic Workflow
+
+1. Capture or create the first request or response.
+2. Send the data to Comparer.
+3. Send the second data set to Comparer.
+4. Open Comparer and select the two items.
+5. Start the comparison.
+6. Review the highlighted differences.
+
+Comparer can identify content that has been added, deleted, or modified. When available, synchronized views make it easier to examine corresponding sections of the two data sets.
+
+### Practical Example: Comparing Login Responses
+
+When testing an authorized lab application, compare responses generated by different login attempts.
+
+Inspect the following:
+
+- HTTP status code.
+- Response body.
+- Response headers.
+- Redirect location.
+- Session-related cookies.
+- Error messages and response structure.
+
+A response may change even when authentication fails. For example, an application may return a different error message for different invalid inputs.
+
+**Important:** A status code, response length, or changed response body alone does not prove that authentication succeeded. Interpret the differences in context and verify the application's actual behavior.
+
+### Practical Applications
+
+- Compare successful and unsuccessful login responses.
+- Identify changes caused by modifying a request parameter.
+- Compare application responses before and after an input change.
+- Examine differences in headers, cookies, and response bodies.
+- Investigate unexpected behavior during web application testing.
+
+---
+
+## 3. Sequencer
+
+### What is Sequencer?
+
+Sequencer analyzes tokens to estimate whether they exhibit sufficient randomness and unpredictability.
+
+Applications commonly use tokens for session management, CSRF protection, password-reset workflows, and other security-sensitive operations.
+
+If a security-sensitive token is predictable, an attacker may be able to guess valid values. Sequencer helps testers investigate this risk statistically.
+
+### Key Concepts
+
+#### Randomness
+
+Randomness describes the statistical properties of generated values. Security-sensitive tokens should also be difficult for an attacker to predict.
+
+#### Entropy
+
+Entropy is a measure of uncertainty. In token analysis, estimated effective entropy can help assess how much unpredictability the collected samples appear to contain.
+
+Higher estimated entropy can be encouraging, but it does not automatically prove that a token-generation system is secure.
+
+Security also depends on factors such as:
+
+- The token-generation algorithm.
+- The quality of the random-number generator.
+- The available token space.
+- Whether tokens are reused.
+- How tokens are generated, transmitted, and validated.
+- Whether an attacker can observe information that reduces uncertainty.
+
+### Capture Modes
+
+| Mode | Description |
+|---|---|
+| Live Capture | Collects tokens from live application responses or requests |
+| Manual Load | Loads previously collected tokens for analysis |
+
+The available capture configuration depends on the token source and the Burp Suite version.
+
+### Token Locations
+
+Sequencer can be configured to extract tokens from different locations, such as:
+
+- **Cookie:** A token contained in an HTTP cookie.
+- **Form Field:** A token included in form data.
+- **Custom Location:** A token extracted from a specified location in the HTTP message.
+
+The extraction location must match the format used by the target application.
+
+### Example: Analyzing a Login Token in a Lab
+
+In an authorized TryHackMe lab, a token named `loginToken` may be included in a form field.
+
+A typical workflow is:
+
+1. Identify the token in the HTTP request or response.
+2. Configure Sequencer to extract the correct token value.
+3. Start a capture using the lab's intended workflow.
+4. Collect the required samples.
+5. Pause the capture when sufficient samples have been collected.
+6. Run the statistical analysis.
+7. Review the overall result, estimated entropy, sample count, and reliability indicators.
+
+The number of samples needed depends on the analysis and token-generation mechanism. A larger sample set can improve the usefulness of statistical analysis, but it cannot compensate for every limitation in the test design.
+
+### Understanding Results
+
+Sequencer may report several indicators:
+
+| Indicator | Meaning |
+|---|---|
+| Overall Result | Summary of the statistical analysis |
+| Effective Entropy | Estimate of the token's effective unpredictability |
+| Sample Count | Number of collected tokens analyzed |
+| Significance Level | Statistical threshold used when interpreting test results |
+| Reliability Indicators | Information about the strength or limitations of the analysis |
+
+For example, a report showing an estimated effective entropy of 117 bits is an analytical estimate, not an unconditional guarantee that the token is secure.
+
+Likewise, a **1% significance level does not mean that the result is 99% guaranteed to be correct**. Statistical significance and confidence in a security conclusion are different concepts.
+
+### Limitations
+
+- Statistical testing cannot prove that a token is unpredictable under every condition.
+- A token may appear statistically random but still be predictable if the generation algorithm or its inputs are exposed.
+- Insufficient or biased samples can weaken conclusions.
+- A high entropy estimate does not replace reviewing the token-generation implementation.
+- Test only systems for which you have explicit authorization.
+
+### Practical Applications
+
+- Investigate session-token generation.
+- Assess randomness in CSRF tokens.
+- Examine password-reset tokens.
+- Identify possible patterns or statistical weaknesses in generated tokens.
+- Support a broader review of authentication and session-management security.
+
+---
+
+## 4. Organizer
+
+### What is Organizer?
+
+Organizer is a Burp Suite tool for collecting and organizing copies of HTTP requests and responses. It helps testers keep relevant evidence together during multi-step investigations.
+
+It is useful when several requests need to be reviewed later or when a test requires a record of specific application interactions.
+
+### Sending Items to Organizer
+
+A typical workflow is:
+
+1. Locate an HTTP request or response in a Burp Suite tool.
+2. Right-click the item.
+3. Select **Send to Organizer**, or use the supported keyboard shortcut (`Ctrl+O` in configurations where this shortcut is assigned).
+4. Open Organizer to review the saved item.
+
+Menu labels and keyboard shortcuts may vary between Burp Suite versions and configurations.
+
+### Common Table Columns
+
+Organizer may display information such as:
+
+| Column | Description |
+|---|---|
+| Index | Item identifier within Organizer |
+| Time | Time associated with the saved item |
+| Workflow Status | Status used to track the item's workflow |
+| Tool | Burp tool from which the item originated |
+| Method | HTTP method, such as GET or POST |
+| Hostname | Target host |
+| URL Path | Requested resource path |
+| Query String | Query parameters in the URL |
+| Parameter Count | Number of recognized parameters |
+| HTTP Status | Status code of the response, when available |
+| Response Length | Size of the response |
+| Notes | Additional notes recorded by the tester |
+
+The exact columns and available metadata depend on the Burp Suite version and the type of item saved.
+
+### Important Behavior
+
+Organizer stores copies of requests and responses. These saved copies do not automatically update when the original request or response changes elsewhere in Burp Suite.
+
+Therefore, if a request is modified in Repeater, an earlier Organizer entry should not be assumed to contain the updated request. Save the new version when you need to preserve it.
+
+### Practical Applications
+
+- Keep important requests and responses together.
+- Organize evidence from a multi-step lab.
+- Track requests associated with different test cases.
+- Preserve useful examples for later review.
+- Add notes to make investigation results easier to understand.
+
+---
+
+## 5. Quick Revision
+
+| Tool | Main Function | Example Use |
+|---|---|---|
+| Decoder | Encode, decode, transform, and hash data | Decode a Base64 value |
+| Comparer | Identify differences between data sets | Compare two login responses |
+| Sequencer | Statistically analyze token randomness | Review session-token unpredictability |
+| Organizer | Save and organize HTTP message copies | Maintain a collection of test evidence |
+
+## 6. Key Takeaways
+
+- **Decoder:** Encoding changes data representation; hashing produces a digest. Neither should be confused with encryption.
+- **Comparer:** Differences between responses can reveal changes in application behavior, but each difference needs contextual interpretation.
+- **Sequencer:** Statistical analysis can provide evidence about token randomness, not an absolute guarantee of security.
+- **Organizer:** Saved items are useful for documentation and evidence management, but they are copies rather than automatically synchronized live requests.
+- **Responsible testing:** Perform security testing only on systems you own or are explicitly authorized to assess.
+
+## Conclusion
+
+Decoder, Comparer, Sequencer, and Organizer support different stages of web application security testing. Decoder helps interpret data, Comparer highlights differences, Sequencer evaluates token randomness statistically, and Organizer keeps important HTTP messages organized. Used together with Proxy and Repeater, these tools make testing workflows easier to investigate, document, and reproduce.
