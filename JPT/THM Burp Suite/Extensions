@@ -1,0 +1,164 @@
+# TryHackMe — Burp Suite Extensions
+
+## Overview
+
+Burp Suite extensions are add-ons that extend the platform's existing functionality. They can introduce additional tools, automate repetitive tasks, and support specialized web application security testing workflows.
+
+For example, an extension can record HTTP request timing or provide additional analysis capabilities.
+
+## 1. Extensions Interface
+
+The **Extensions** module is used to install, configure, activate, deactivate, and monitor Burp Suite extensions.
+
+### Common Interface Options
+
+| Option | Description |
+|---|---|
+| Extensions List | Displays installed extensions |
+| Activate | Enables a selected extension |
+| Deactivate | Disables an extension temporarily |
+| Add | Adds an extension from a supported file or source |
+| Remove | Removes a selected extension |
+| Up / Down | Changes the extension's order where supported |
+| Details | Displays extension information, such as its name, version, and description |
+| Output | Displays output produced by an extension |
+| Errors | Displays extension errors and diagnostic information |
+
+**Important:** Extension order can matter when multiple extensions process or modify the same HTTP traffic. The actual effect depends on how each extension is implemented.
+
+## 2. BApp Store
+
+The **BApp Store (Burp App Store)** is PortSwigger's official marketplace for Burp Suite extensions. It allows users to discover and install extensions that add functionality to their testing workflows.
+
+### Installing Request Timer
+
+1. Open Burp Suite.
+2. Navigate to the **Extensions** module.
+3. Open the **BApp Store** tab.
+4. Search for `Request Timer`.
+5. Select the extension and review its details.
+6. Click **Install**.
+7. Verify that the extension has been installed and check where its functionality is exposed in the interface.
+
+The exact interface and available options may vary by Burp Suite version.
+
+### Request Timer
+
+Request Timer is used to record or inspect the time associated with HTTP requests and their responses, depending on the extension's implementation.
+
+**Example:**
+
+| Request | Observed Time |
+|---|---:|
+| Request A | 200 ms |
+| Request B | 1200 ms |
+
+A timing difference may provide a useful lead during an investigation. However, it does not independently establish a vulnerability. Network latency, server load, caching, and application behavior can all affect response times.
+
+When investigating timing-related behavior, compare repeated requests under similar conditions and interpret the results alongside other evidence.
+
+## 3. Extension Development Languages
+
+Burp Suite supports extension development through different APIs and integration mechanisms. The TryHackMe room introduces the following languages and runtimes:
+
+| Language | Integration |
+|---|---|
+| Java | Supported through Java-based extension APIs |
+| Python | Historically supported through Jython integration in compatible environments |
+| Ruby | Historically supported through JRuby integration in compatible environments |
+
+**Compatibility note:** Support depends on the Burp Suite extension API and the runtime being used. Jython and JRuby are not interchangeable with every modern Python or Ruby environment. Check the relevant PortSwigger documentation before developing or installing an extension.
+
+## 4. Jython Integration
+
+**Jython** is an implementation of Python that runs on the Java platform. It can be used by compatible Burp Suite extensions that depend on Jython.
+
+### Configuring Jython on a Local Machine
+
+1. Download the Jython Standalone JAR from the official website:  
+   https://www.jython.org/download
+2. Open Burp Suite.
+3. Navigate to **Extensions** and open the extension settings.
+4. Locate the Python environment configuration, if available in your version.
+5. Set the location of the Jython Standalone JAR file.
+6. Verify that Burp Suite recognizes the configured runtime.
+
+The exact setting names and availability may vary between Burp Suite versions.
+
+### TryHackMe AttackBox Note
+
+According to the room instructions, the AttackBox environment may already have Jython configured. If so, repeating the local configuration steps may not be necessary.
+
+### Important Considerations
+
+- Use a compatible Jython version for the extension and Burp Suite environment.
+- A correctly configured Jython runtime does not guarantee that every Python extension will work.
+- Modern Python libraries may depend on features that are not supported by Jython.
+
+## 5. Extender APIs
+
+An **API (Application Programming Interface)** defines how software components interact with one another.
+
+Burp Suite exposes extension APIs that allow developers to integrate custom functionality with the platform.
+
+Depending on the API and extension framework, developers may be able to:
+
+- Access HTTP requests and responses.
+- Process or modify traffic.
+- Add custom analysis functionality.
+- Automate repetitive testing tasks.
+- Integrate external libraries or workflows.
+- Build specialized tools for web application security testing.
+
+### Viewing Extension APIs
+
+1. Open the **Extensions** module in Burp Suite.
+2. Select the **APIs** tab, if available in your version.
+3. Browse the available interfaces and their descriptions.
+
+### Official Documentation
+
+- [PortSwigger — Writing Your First Burp Suite Extension](https://portswigger.net/burp/extender/writing-your-first-burp-suite-extension)
+- [PortSwigger — Burp Suite Documentation](https://portswigger.net/burp/documentation)
+
+The first link introduces extension development. Consult the current documentation for the recommended APIs and supported extension frameworks.
+
+## 6. Important Terminology
+
+| Term | Definition |
+|---|---|
+| Extension | An add-on that extends Burp Suite's functionality |
+| BApp Store | PortSwigger's official extension marketplace |
+| Jython | A Python implementation for the Java platform |
+| JRuby | A Ruby implementation for the Java platform |
+| API | An interface that enables interaction between software components |
+| Request Timer | An extension used to record or inspect HTTP request timing |
+| Output | Information produced by an extension during execution |
+| Errors | Diagnostic information about extension failures |
+
+## 7. Quick Revision
+
+| Question | Answer |
+|---|---|
+| What is the purpose of extensions? | To add functionality to Burp Suite |
+| Where can official extensions be found? | BApp Store |
+| What does a request-timing extension help investigate? | Differences in HTTP request-response timing |
+| What is Jython? | A Python implementation for the Java platform |
+| What is JRuby? | A Ruby implementation for the Java platform |
+| How can an extension be added? | Through the Extensions interface or BApp Store, depending on the extension |
+| Where can extension information be inspected? | Details or the relevant extension information panel |
+| Where can extension errors be reviewed? | Errors section |
+| What is the purpose of extension APIs? | To enable programmatic interaction with Burp Suite |
+
+## 8. Key Takeaways
+
+- Burp Suite extensions add capabilities beyond the platform's built-in tools.
+- The BApp Store provides a convenient way to discover and install extensions.
+- Request-timing data can help identify behavior worth investigating, but timing differences alone do not prove a vulnerability.
+- Jython and JRuby support certain compatible Python- and Ruby-based extensions.
+- Extension APIs allow developers to create custom security-testing functionality.
+- Runtime compatibility and API support should be verified before installing or developing an extension.
+
+## Conclusion
+
+Burp Suite Extensions make the platform more flexible by allowing testers to add specialized tools, automate workflows, and develop custom functionality. Understanding the Extensions interface, BApp Store, language integration, and extension APIs provides a foundation for using and developing extensions in authorized security-testing environments.
