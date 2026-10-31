@@ -1,0 +1,452 @@
+# TryHackMe — SQL Injection: Introduction
+
+## Overview
+
+SQL Injection (SQLi) is a web application vulnerability that occurs when untrusted user input is incorporated into SQL queries without proper handling.
+
+An attacker may manipulate the intended query logic by supplying specially crafted input. This can expose sensitive information or affect database operations.
+
+### Potential Impact
+
+- Unauthorized access to database information.
+- Authentication bypass.
+- Exposure of sensitive records.
+- Unauthorized modification or deletion of database records.
+- Further compromise of applications with insecure database configurations.
+
+---
+
+## 1. SQL Fundamentals
+
+SQL (Structured Query Language) is used to interact with relational databases.
+
+### SELECT
+
+Retrieves data from a database table.
+
+```sql
+SELECT * FROM users;
+```
+
+### WHERE
+
+Filters records according to a specified condition.
+
+```sql
+SELECT * FROM users WHERE id = 1;
+```
+
+### ORDER BY
+
+Sorts query results based on one or more columns.
+
+```sql
+SELECT * FROM users ORDER BY username;
+```
+
+### LIMIT
+
+Restricts the number of rows returned.
+
+```sql
+SELECT * FROM users LIMIT 5;
+```
+
+### SQL Comments
+
+Comments allow developers to include text that is not executed as part of a SQL statement.
+
+Common MySQL comment syntaxes include:
+
+| Syntax | Description |
+|---|---|
+| `-- ` | Single-line comment; whitespace after the dashes is important in MySQL |
+| `#` | Single-line comment |
+| `/* ... */` | Block comment |
+
+Comment syntax and behavior can vary between database engines.
+
+---
+
+## 2. SQL Functions and Metadata
+
+### DATABASE()
+
+Returns the name of the currently selected database.
+
+```sql
+SELECT DATABASE();
+```
+
+### CONCAT()
+
+Combines multiple strings into a single string.
+
+```sql
+SELECT CONCAT('Hello', ' ', 'World');
+```
+
+### GROUP_CONCAT()
+
+A MySQL aggregate function that combines values from multiple rows into a single string.
+
+It is useful when examining grouped data.
+
+### LIKE
+
+Performs pattern matching in SQL queries.
+
+Common wildcard characters:
+
+| Wildcard | Description |
+|---|---|
+| `%` | Matches zero or more characters |
+| `_` | Matches exactly one character |
+
+### LIMIT offset, count
+
+In MySQL, this syntax skips a specified number of rows and returns the requested number of subsequent rows.
+
+### information_schema
+
+`information_schema` contains metadata about databases, tables, columns, and other database objects.
+
+Important metadata tables include:
+
+| Table | Purpose |
+|---|---|
+| `information_schema.tables` | Provides information about tables |
+| `information_schema.columns` | Provides information about columns |
+
+Important fields include:
+
+- `table_schema`
+- `table_name`
+- `column_name`
+- `data_type`
+
+Understanding database metadata is useful when analyzing database structure during authorized security testing.
+
+---
+
+## 3. Understanding SQL Injection
+
+SQL Injection occurs when an application constructs SQL queries using untrusted input in an unsafe manner.
+
+Consider the following query:
+
+```sql
+SELECT * FROM articles
+WHERE id = 1 AND public = 1;
+```
+
+If an application directly concatenates user-controlled input into this query, the input may alter the intended SQL structure or logic.
+
+### Common Input Locations
+
+SQL Injection may occur through:
+
+- URL query parameters.
+- Login forms.
+- Search fields.
+- HTTP cookies.
+- HTTP headers.
+
+### Possible Detection Indicators
+
+During authorized testing, the following behaviors may indicate unsafe SQL query handling:
+
+- Unexpected database error messages.
+- Different application responses for different input conditions.
+- Unusual response-time differences.
+- Unexpected changes in application behavior after modifying input.
+
+**Important:** An error message or response delay alone does not conclusively establish SQL Injection. Findings must be verified using appropriate evidence.
+
+---
+
+## 4. In-Band SQL Injection
+
+In-Band SQL Injection occurs when the injection and the resulting information are communicated through the same channel, usually the application's HTTP response.
+
+Two commonly discussed types are Error-Based and Union-Based SQL Injection.
+
+### A. Error-Based SQL Injection
+
+Error-Based SQLi involves database errors that may reveal information about query processing or database configuration.
+
+Detailed database errors can expose internal implementation details and help identify insecure query handling.
+
+**Security concern:** Production applications should not expose detailed database errors to users.
+
+### B. Union-Based SQL Injection
+
+The SQL `UNION` operator combines the results of multiple `SELECT` statements.
+
+For a UNION operation to work correctly:
+
+1. Both SELECT statements must return the same number of columns.
+2. Corresponding columns must have compatible data types.
+
+During the TryHackMe lab, the article table was found to contain three columns. A UNION query with only two selected values produced a column-count mismatch error.
+
+Example error:
+
+```text
+The used SELECT statements have a different number of columns
+```
+
+This indicates that the SELECT statements do not return the same number of columns.
+
+**Key concept:** Column-count compatibility is a fundamental requirement of UNION operations.
+
+---
+
+## 5. Blind SQL Injection
+
+Blind SQL Injection occurs when the application does not directly display database query results.
+
+Instead, information must be inferred from observable application behavior.
+
+### A. Authentication Bypass
+
+Insecure authentication logic may allow user-controlled input to influence the SQL condition used to verify credentials.
+
+If the application relies on an unsafe dynamically constructed query, its authentication decision may be manipulated.
+
+**Security lesson:** Authentication queries should use parameterized statements and secure credential-verification logic.
+
+### B. Boolean-Based Blind SQL Injection
+
+Boolean-Based Blind SQLi relies on differences in application behavior when a database condition evaluates to true or false.
+
+Possible observable signals include:
+
+- Different JSON responses.
+- Changes in page content.
+- Different application behavior.
+- Changes in response structure.
+
+These differences can provide information about database conditions even when query results are not directly displayed.
+
+### C. Time-Based Blind SQL Injection
+
+Time-Based Blind SQLi uses response timing as an observable signal when the application does not expose useful differences in its response content.
+
+MySQL provides a `SLEEP()` function that pauses query execution for a specified duration.
+
+In a controlled lab, differences in response time may indicate whether a database condition affected query execution.
+
+However, timing measurements can also be affected by:
+
+- Network latency.
+- Server workload.
+- Database performance.
+- Caching.
+- Other application processes.
+
+Repeated observations and controlled comparisons are important when interpreting timing-based results.
+
+---
+
+## 6. Out-of-Band (OOB) SQL Injection
+
+Out-of-Band SQL Injection occurs when database-related information is communicated through a separate network channel instead of the application's normal HTTP response.
+
+For example, a database server may initiate an outbound DNS or HTTP interaction.
+
+### Communication Channels
+
+| Channel | Description |
+|---|---|
+| Attack Channel | The normal request sent to the web application |
+| Data Channel | A separate outbound communication channel |
+
+### Technologies Covered
+
+The TryHackMe room introduces several database-specific features associated with OOB behavior:
+
+| Technology | Database | Description |
+|---|---|---|
+| `LOAD_FILE()` | MySQL | Reads files under supported permissions and configurations; certain path-handling scenarios may involve DNS resolution |
+| `xp_dirtree` | Microsoft SQL Server | Extended stored procedure associated with directory-related operations; certain remote path interactions may trigger DNS lookups |
+| `xp_cmdshell` | Microsoft SQL Server | Executes operating-system commands when enabled and appropriately permitted |
+| Burp Collaborator | Security testing tool | Helps detect external interactions, including DNS and HTTP callbacks |
+| Interactsh | Security testing tool | Provides infrastructure for observing out-of-band interactions |
+
+### Limitations
+
+- The database server must be able to make the relevant outbound network connection.
+- Behavior depends on the database engine and its configuration.
+- DNS labels have a maximum length of 63 octets.
+- Callbacks may be delayed or unreliable.
+- Network restrictions and database permissions can prevent the expected interaction.
+
+**Note:** OOB SQL Injection is relatively uncommon and depends heavily on the environment. The TryHackMe room introduces these concepts without a practical walkthrough.
+
+---
+
+## 7. SQL Injection Prevention
+
+Preventing SQL Injection requires secure query construction and appropriate application-level security controls.
+
+### A. Prepared Statements / Parameterized Queries
+
+Prepared statements are the primary defense against SQL Injection.
+
+They separate SQL query structure from user-supplied values.
+
+#### Vulnerable PHP Example
+
+```php
+$query = "SELECT * FROM users WHERE username='" . $_POST['username'] . "'";
+$result = mysqli_query($conn, $query);
+```
+
+This example directly concatenates user input into the SQL statement.
+
+#### Fixed PHP Example Using PDO
+
+```php
+$stmt = $pdo->prepare(
+    "SELECT * FROM users WHERE username = ?"
+);
+
+$stmt->execute([$_POST['username']]);
+$result = $stmt->fetchAll();
+```
+
+The placeholder represents a parameter. The supplied value is handled separately from the SQL query structure.
+
+#### Python Example
+
+```python
+cursor.execute(
+    "SELECT * FROM users WHERE username = %s",
+    (username,)
+)
+```
+
+Placeholder syntax depends on the database driver. Always follow the parameterization rules of the specific library being used.
+
+### B. Input Validation
+
+Validate user input according to the expected format and application requirements.
+
+For example, an article ID expected to be numeric should be validated as a permitted numeric value.
+
+Allowlisting expected input formats is generally more reliable than attempting to block a list of suspicious characters.
+
+**Important:** Input validation is an additional security layer, not a replacement for parameterized queries.
+
+### C. Escaping
+
+Escaping represents special characters according to database-specific rules.
+
+Although escaping can help in certain situations, it is error-prone when implemented incorrectly.
+
+Prepared statements should be preferred for handling user-controlled values.
+
+### D. Principle of Least Privilege
+
+Database accounts should have only the permissions required for their intended application functions.
+
+Recommended practices:
+
+- Avoid using highly privileged accounts such as `root` or `sa` for routine application access.
+- Give read-only components only the permissions they require.
+- Restrict access to sensitive tables and administrative operations.
+- Separate application accounts according to their responsibilities.
+
+Reducing database privileges limits the potential impact of a successful injection vulnerability.
+
+### E. Web Application Firewall (WAF)
+
+A Web Application Firewall inspects incoming HTTP traffic and may block requests that match suspicious patterns.
+
+However, a WAF is not a replacement for secure SQL query construction.
+
+It should be treated as an additional defense-in-depth measure.
+
+### F. Safe Error Handling
+
+Applications should avoid exposing detailed database errors to end users.
+
+Recommended practices:
+
+- Return appropriate generic error messages.
+- Store detailed diagnostic information in protected application logs.
+- Restrict access to error logs.
+- Avoid exposing database queries, credentials, or internal implementation details.
+
+---
+
+## 8. SQL Injection Techniques — Quick Comparison
+
+| Technique | Primary Observable Signal |
+|---|---|
+| Error-Based SQLi | Database error messages |
+| Union-Based SQLi | Query results displayed in the web response |
+| Authentication Bypass | Unexpected authentication behavior |
+| Boolean-Based Blind SQLi | Differences in true/false application responses |
+| Time-Based Blind SQLi | Differences in response timing |
+| Out-of-Band SQLi | Separate DNS or HTTP interactions |
+
+---
+
+## 9. Key Takeaways
+
+1. SQL Injection commonly results from unsafe construction of SQL queries using untrusted input.
+2. UNION operations require matching column counts and compatible corresponding data types.
+3. In-Band SQLi communicates results through the same channel used for the injection.
+4. Blind SQLi relies on observable behavior or timing rather than directly displayed query results.
+5. Out-of-Band SQLi uses a separate communication channel.
+6. Prepared statements and parameterized queries are the primary prevention method.
+7. Input validation, least privilege, safe error handling, and WAFs provide additional security layers.
+8. SQL Injection findings should be verified and documented using reliable evidence.
+9. Security testing must be performed only on systems for which explicit authorization has been granted.
+
+---
+
+## 10. Glossary
+
+| Term | Definition |
+|---|---|
+| SQL | Structured Query Language |
+| SQLi | SQL Injection |
+| DBMS | Database Management System |
+| UNION | SQL operator used to combine the results of multiple SELECT statements |
+| Blind SQLi | SQL Injection where information is inferred through application behavior |
+| Payload | Specially crafted input used during security testing |
+| Parameterization | Separating SQL query structure from user-supplied values |
+| Least Privilege | Providing only the minimum permissions necessary |
+| OOB | Out-of-Band communication |
+| WAF | Web Application Firewall |
+| Metadata | Information describing database objects and their structure |
+
+---
+
+## 11. Lab Summary
+
+**Platform:** TryHackMe  
+**Room:** SQL Injection: Introduction
+
+### Topics Covered
+
+- SQL fundamentals.
+- SQL functions and database metadata.
+- SQL Injection concepts and detection indicators.
+- In-Band SQL Injection.
+- Error-Based SQL Injection.
+- Union-Based SQL Injection.
+- Authentication bypass concepts.
+- Boolean-Based Blind SQL Injection.
+- Time-Based Blind SQL Injection.
+- Out-of-Band SQL Injection concepts.
+- SQL Injection prevention techniques.
+
+### Final Takeaway
+
+A good penetration tester should understand both how a vulnerability occurs and how it can be prevented. SQL Injection demonstrates the importance of secure query construction, proper input handling, and least-privilege database access.
+
+Always perform testing within authorized environments and document findings clearly.
